@@ -1,0 +1,2055 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RAK INC — Sales Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* RAK design tokens (Figma: RAK-INC) */
+      :root {
+        --rak-black: #000000;
+        --rak-bg-deep: #030303;
+        --rak-surface: #1f1f1f;
+        --rak-surface-2: #151515;
+        --rak-border: #ffffff24;
+        --rak-border-subtle: #ffffff1c;
+        --rak-text: #ffffff;
+        --rak-text-muted: #ffffff87;
+        --rak-text-dim: #ffffff5c;
+        --rak-primary: #63c2d4;
+        --rak-primary-muted: #63c2d480;
+        --rak-primary-deep: #308fa1;
+        --rak-blue: #3d3a87;
+        --rak-gray-light: #f1f1ed;
+        --rak-radius-sm: 8px;
+        --rak-radius-md: 12px;
+        --rak-radius-lg: 20px;
+        --rak-radius-xl: 24px;
+        --font-sans:
+          "Montserrat", -apple-system, BlinkMacSystemFont, sans-serif;
+        --rail-width: 72px;
+        --history-width: 300px;
+      }
+
+      body {
+        font-family: var(--font-sans);
+        background: var(--rak-bg-deep);
+        color: var(--rak-text);
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* ── Sign-in (Cognito) ─────────────────────────────────── */
+      #screen-signin {
+        min-height: 100vh;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background:
+          radial-gradient(
+            ellipse 80% 60% at 50% 0%,
+            rgba(99, 194, 212, 0.12),
+            transparent 55%
+          ),
+          var(--rak-bg-deep);
+      }
+      #screen-signin .signin-card {
+        width: 100%;
+        max-width: 420px;
+        background: var(--rak-surface);
+        border: 1px solid var(--rak-border-subtle);
+        border-radius: var(--rak-radius-xl);
+        padding: 40px 36px;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      }
+      #screen-signin .brand-mark {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: linear-gradient(
+          135deg,
+          var(--rak-primary),
+          var(--rak-blue)
+        );
+        margin-bottom: 20px;
+      }
+      #screen-signin h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin-bottom: 8px;
+      }
+      #screen-signin p {
+        color: var(--rak-text-muted);
+        font-size: 0.9rem;
+        line-height: 1.55;
+        margin-bottom: 28px;
+      }
+      .btn-cognito {
+        width: 100%;
+        border: none;
+        border-radius: var(--rak-radius-md);
+        padding: 14px 20px;
+        font-family: inherit;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        background: linear-gradient(
+          135deg,
+          var(--rak-primary-deep),
+          var(--rak-primary)
+        );
+        color: var(--rak-black);
+        transition:
+          filter 0.2s,
+          transform 0.15s;
+      }
+      .btn-cognito:hover {
+        filter: brightness(1.06);
+      }
+      .btn-cognito:active {
+        transform: scale(0.99);
+      }
+      .signin-hint {
+        margin-top: 20px;
+        font-size: 0.75rem;
+        color: var(--rak-text-dim);
+        line-height: 1.5;
+      }
+      .signin-hint code {
+        font-size: 0.7rem;
+        background: var(--rak-surface-2);
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
+      /* ── App shell ─────────────────────────────────────────── */
+      #screen-app {
+        display: none;
+        height: 100vh;
+        flex-direction: row;
+      }
+      #screen-app.visible {
+        display: flex;
+      }
+
+      /* Left rail */
+      .rail {
+        width: var(--rail-width);
+        flex-shrink: 0;
+        background: var(--rak-surface);
+        border-right: 1px solid var(--rak-border-subtle);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 16px 0;
+        gap: 8px;
+      }
+      .rail-logo {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: linear-gradient(
+          145deg,
+          var(--rak-primary),
+          var(--rak-blue)
+        );
+        margin-bottom: 12px;
+        flex-shrink: 0;
+      }
+      .rail-btn {
+        width: 44px;
+        height: 44px;
+        border: none;
+        border-radius: var(--rak-radius-md);
+        background: transparent;
+        color: var(--rak-text-muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+          background 0.15s,
+          color 0.15s;
+      }
+      .rail-btn:hover {
+        background: var(--rak-border-subtle);
+        color: var(--rak-text);
+      }
+      .rail-btn svg {
+        width: 22px;
+        height: 22px;
+      }
+      .rail-spacer {
+        flex: 1;
+      }
+      .rail-account {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 2px solid var(--rak-border-subtle);
+        background: var(--rak-surface-2);
+        color: var(--rak-primary);
+        font-size: 0.75rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+
+      /* Center column */
+      .main-col {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        background: var(--rak-bg-deep);
+      }
+      .main-col::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(
+          circle at 50% 35%,
+          rgba(99, 194, 212, 0.06) 0%,
+          transparent 45%
+        );
+      }
+      .main-topbar {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        justify-content: flex-end;
+        padding: 16px 24px 0;
+      }
+      .icon-btn {
+        width: 40px;
+        height: 40px;
+        border: none;
+        border-radius: var(--rak-radius-md);
+        background: transparent;
+        color: var(--rak-text-muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .icon-btn:hover {
+        background: var(--rak-border-subtle);
+        color: var(--rak-text);
+      }
+
+      .main-scroll {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0 24px 24px;
+      }
+
+      .hero-orb {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        margin-top: 8px;
+        margin-bottom: 24px;
+        background: radial-gradient(
+          circle at 30% 30%,
+          #a78bfa,
+          var(--rak-primary) 45%,
+          var(--rak-blue) 85%
+        );
+        box-shadow:
+          0 0 60px rgba(99, 194, 212, 0.35),
+          0 0 100px rgba(61, 58, 135, 0.25);
+      }
+      .hero-greeting {
+        text-align: center;
+        font-size: clamp(1.25rem, 2.5vw, 1.65rem);
+        font-weight: 600;
+        color: var(--rak-text);
+        max-width: 520px;
+        line-height: 1.35;
+        margin-bottom: 28px;
+      }
+      .hero-greeting span {
+        color: var(--rak-text-muted);
+        font-weight: 500;
+        display: block;
+        margin-top: 8px;
+        font-size: 0.92em;
+      }
+
+      .messages-wrap {
+        width: 100%;
+        max-width: 720px;
+        flex: 1;
+        min-height: 120px;
+        display: none;
+        flex-direction: column;
+        gap: 14px;
+        padding-bottom: 16px;
+      }
+      .messages-wrap.visible {
+        display: flex;
+      }
+      .messages-wrap.empty {
+        display: none !important;
+      }
+
+      .msg {
+        display: flex;
+        flex-direction: column;
+        max-width: 85%;
+      }
+      .msg.user {
+        align-self: flex-end;
+        align-items: flex-end;
+      }
+      .msg.assistant {
+        align-self: flex-start;
+        align-items: flex-start;
+      }
+      .msg-label {
+        font-size: 0.7rem;
+        color: var(--rak-text-dim);
+        margin-bottom: 4px;
+        font-weight: 600;
+      }
+      .msg-bubble {
+        padding: 12px 16px;
+        border-radius: var(--rak-radius-md);
+        font-size: 0.9rem;
+        line-height: 1.55;
+        white-space: pre-wrap;
+      }
+      .msg.user .msg-bubble {
+        background: rgba(99, 194, 212, 0.2);
+        color: var(--rak-text);
+        border: 1px solid var(--rak-primary-muted);
+        border-bottom-right-radius: 4px;
+      }
+      .msg.assistant .msg-bubble {
+        background: var(--rak-surface);
+        color: var(--rak-text);
+        border: 1px solid var(--rak-border-subtle);
+        border-bottom-left-radius: 4px;
+      }
+      .msg.typing .msg-bubble {
+        color: var(--rak-text-muted);
+        font-style: italic;
+      }
+
+      .composer-card {
+        width: 100%;
+        max-width: 720px;
+        background: var(--rak-surface);
+        border: 1px solid var(--rak-border-subtle);
+        border-radius: var(--rak-radius-xl);
+        padding: 16px 18px;
+        margin-bottom: 20px;
+      }
+      .composer-card textarea {
+        width: 100%;
+        background: transparent;
+        border: none;
+        color: var(--rak-text);
+        font-family: inherit;
+        font-size: 0.95rem;
+        resize: none;
+        min-height: 52px;
+        max-height: 140px;
+        line-height: 1.5;
+        outline: none;
+      }
+      .composer-card textarea::placeholder {
+        color: var(--rak-text-dim);
+      }
+      .composer-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--rak-border-subtle);
+      }
+      .composer-left {
+        display: flex;
+        gap: 6px;
+      }
+      .composer-left .icon-btn {
+        width: 36px;
+        height: 36px;
+      }
+      .btn-generate {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+        border-radius: var(--rak-radius-md);
+        padding: 10px 20px;
+        font-family: inherit;
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+        background: linear-gradient(
+          135deg,
+          var(--rak-primary-deep),
+          var(--rak-primary)
+        );
+        color: var(--rak-black);
+        transition: filter 0.2s;
+      }
+      .btn-generate:hover:not(:disabled) {
+        filter: brightness(1.08);
+      }
+      .btn-generate:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .quick-cards {
+        width: 100%;
+        max-width: 720px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      @media (min-width: 900px) {
+        .quick-cards {
+          grid-template-columns: repeat(4, 1fr);
+        }
+      }
+      .quick-card {
+        background: var(--rak-surface);
+        border: 1px solid var(--rak-border-subtle);
+        border-radius: var(--rak-radius-md);
+        padding: 14px 16px;
+        text-align: left;
+        cursor: pointer;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
+      }
+      .quick-card:hover {
+        border-color: var(--rak-primary-muted);
+        background: var(--rak-surface-2);
+      }
+      .quick-card h3 {
+        font-size: 0.82rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: var(--rak-text);
+      }
+      .quick-card p {
+        font-size: 0.72rem;
+        color: var(--rak-text-muted);
+        line-height: 1.45;
+      }
+
+      /* Right: history + tools */
+      .history-col {
+        width: var(--history-width);
+        flex-shrink: 0;
+        background: var(--rak-surface);
+        border-left: 1px solid var(--rak-border-subtle);
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .history-header {
+        padding: 20px 16px 12px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--rak-text-dim);
+      }
+      .chat-search {
+        padding: 0 12px 12px;
+      }
+      .chat-search input {
+        width: 100%;
+        background: var(--rak-surface-2);
+        border: 1px solid var(--rak-border-subtle);
+        border-radius: var(--rak-radius-sm);
+        padding: 8px 10px;
+        font-size: 0.8rem;
+        font-family: inherit;
+        color: var(--rak-text);
+        outline: none;
+      }
+      .chat-search input:focus {
+        border-color: var(--rak-primary-muted);
+      }
+      .chat-search input::placeholder {
+        color: var(--rak-text-dim);
+      }
+      .sessions-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-height: 0;
+      }
+      .session-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: var(--rak-radius-md);
+        background: var(--rak-surface-2);
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          border-color 0.15s;
+      }
+      .session-item:hover {
+        border-color: var(--rak-border-subtle);
+      }
+      .session-item.active {
+        border-color: var(--rak-primary);
+        background: rgba(99, 194, 212, 0.08);
+      }
+      .session-item-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--rak-text-dim);
+        margin-top: 6px;
+        flex-shrink: 0;
+      }
+      .session-item.active .session-item-dot {
+        background: var(--rak-primary);
+      }
+      .session-item-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .session-item-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--rak-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .session-item-sub {
+        font-size: 0.68rem;
+        color: var(--rak-text-dim);
+        margin-top: 2px;
+      }
+      .session-delete-btn {
+        background: none;
+        border: none;
+        color: var(--rak-text-dim);
+        cursor: pointer;
+        font-size: 1.1rem;
+        line-height: 1;
+        padding: 0 2px;
+        flex-shrink: 0;
+        opacity: 0;
+        transition: opacity 0.15s;
+      }
+      .session-item:hover .session-delete-btn {
+        opacity: 1;
+      }
+      .session-delete-btn:hover {
+        color: #f87171;
+      }
+      .sessions-empty {
+        font-size: 0.78rem;
+        color: var(--rak-text-dim);
+        font-style: italic;
+        padding: 8px 6px;
+      }
+
+      .dev-accordion {
+        border-top: 1px solid var(--rak-border-subtle);
+        max-height: 42vh;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .dev-accordion summary {
+        padding: 12px 16px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--rak-text-dim);
+        cursor: pointer;
+        list-style: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .dev-accordion summary::-webkit-details-marker {
+        display: none;
+      }
+      .dev-panels {
+        overflow-y: auto;
+        padding: 0 12px 12px;
+        flex: 1;
+        min-height: 0;
+      }
+      .panel-block {
+        margin-bottom: 14px;
+      }
+      .panel-block h2 {
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--rak-text-dim);
+        margin-bottom: 8px;
+      }
+      .slots-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.72rem;
+      }
+      .slots-table td {
+        padding: 4px 5px;
+        vertical-align: top;
+      }
+      .slots-table td:first-child {
+        color: var(--rak-text-dim);
+        white-space: nowrap;
+        font-weight: 500;
+        width: 42%;
+      }
+      .slots-table td:last-child {
+        color: var(--rak-text);
+        word-break: break-all;
+      }
+      .slot-filled {
+        color: var(--rak-primary) !important;
+      }
+      .slot-empty {
+        color: var(--rak-text-dim) !important;
+        font-style: italic;
+      }
+      .submitted-badge {
+        display: inline-block;
+        background: rgba(99, 194, 212, 0.2);
+        color: var(--rak-primary);
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 999px;
+        margin-top: 8px;
+        border: 1px solid var(--rak-primary-muted);
+      }
+      .user-input-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .user-input-row label {
+        font-size: 0.7rem;
+        color: var(--rak-text-dim);
+        white-space: nowrap;
+      }
+      input.user-id-input {
+        flex: 1;
+        background: var(--rak-surface-2);
+        border: 1px solid var(--rak-border-subtle);
+        border-radius: 6px;
+        color: var(--rak-text);
+        padding: 5px 8px;
+        font-size: 0.75rem;
+        font-family: monospace;
+        outline: none;
+      }
+      input.user-id-input:focus {
+        border-color: var(--rak-primary-muted);
+      }
+      .user-active-badge {
+        display: inline-block;
+        background: rgba(61, 58, 135, 0.35);
+        color: var(--rak-primary);
+        font-size: 0.6rem;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 999px;
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .rate-limit-note {
+        font-size: 0.65rem;
+        color: var(--rak-text-dim);
+        margin-bottom: 8px;
+      }
+      .session-id-display {
+        font-family: monospace;
+        font-size: 0.68rem;
+        color: var(--rak-text-muted);
+        word-break: break-all;
+        margin-bottom: 8px;
+        background: var(--rak-surface-2);
+        padding: 6px 8px;
+        border-radius: 6px;
+        border: 1px solid var(--rak-border-subtle);
+      }
+      .btn-small {
+        background: var(--rak-surface-2);
+        border: 1px solid var(--rak-border-subtle);
+        color: var(--rak-text);
+        border-radius: 6px;
+        padding: 5px 10px;
+        font-size: 0.72rem;
+        cursor: pointer;
+        margin-right: 4px;
+        margin-bottom: 4px;
+      }
+      .btn-small:hover {
+        border-color: var(--rak-primary-muted);
+      }
+      .btn-small.danger {
+        border-color: #7f1d1d;
+        color: #fca5a5;
+      }
+      .raw-data-label {
+        font-size: 0.65rem;
+        color: var(--rak-text-dim);
+        font-weight: 600;
+        margin: 8px 0 4px;
+      }
+      .raw-json {
+        font-family: ui-monospace, monospace;
+        font-size: 0.62rem;
+        color: var(--rak-text-muted);
+        background: var(--rak-bg-deep);
+        border: 1px solid var(--rak-border-subtle);
+        border-radius: 4px;
+        padding: 6px 8px;
+        overflow-y: auto;
+        max-height: 72px;
+        white-space: pre-wrap;
+        word-break: break-all;
+        margin: 0;
+      }
+      #logOutput {
+        font-family: ui-monospace, monospace;
+        font-size: 0.62rem;
+        color: var(--rak-text-muted);
+        background: var(--rak-bg-deep);
+        border: 1px solid var(--rak-border-subtle);
+        border-radius: 6px;
+        padding: 8px;
+        max-height: 100px;
+        overflow-y: auto;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .log-info {
+        color: var(--rak-primary);
+      }
+      .log-success {
+        color: #86efac;
+      }
+      .log-error {
+        color: #fca5a5;
+      }
+      .log-dim {
+        color: var(--rak-text-dim);
+      }
+      .log-tool {
+        color: #fcd34d;
+      }
+      .log-tool-data {
+        color: #d4c4a0;
+        padding-left: 10px;
+      }
+
+      .hero-block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+      }
+      .hero-block.hidden {
+        display: none;
+      }
+
+      @media (max-width: 900px) {
+        :root {
+          --history-width: 260px;
+        }
+      }
+      @media (max-width: 720px) {
+        .history-col {
+          display: none;
+        }
+        .rail {
+          width: 56px;
+        }
+        :root {
+          --rail-width: 56px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Cognito sign-in -->
+    <div id="screen-signin">
+      <div class="signin-card">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <h1>RAK INC</h1>
+        <p>
+          Sign in to use the sales agent. Authentication runs on AWS Cognito
+          (hosted UI).
+        </p>
+        <button type="button" class="btn-cognito" id="btnCognitoSignIn">
+          Sign in with Cognito
+        </button>
+        <p class="signin-hint">
+          Set <code>COGNITO_DOMAIN</code>, <code>COGNITO_CLIENT_ID</code>, and
+          <code>COGNITO_REDIRECT_URI</code> in the script config below. Leave
+          <code>COGNITO_CLIENT_ID</code> empty to skip sign-in for local dev.
+        </p>
+      </div>
+    </div>
+
+    <!-- Main app -->
+    <div id="screen-app" class="visible">
+      <aside class="rail" aria-label="Primary">
+        <div class="rail-logo" title="RAK INC"></div>
+        <button
+          type="button"
+          class="rail-btn"
+          title="New chat"
+          onclick="newSession()"
+        >
+          <svg
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="rail-btn"
+          title="Search chats"
+          id="btnToggleSearch"
+        >
+          <svg
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="rail-btn"
+          title="Library / lead fields"
+          onclick="
+            document.querySelector('.dev-accordion').open = true;
+            document
+              .getElementById('devDetails')
+              .scrollIntoView({ behavior: 'smooth' });
+          "
+        >
+          <svg
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+            />
+          </svg>
+        </button>
+        <div class="rail-spacer"></div>
+        <button
+          type="button"
+          class="rail-account"
+          id="railAccountBtn"
+          title="Account"
+        >
+          ?
+        </button>
+      </aside>
+
+      <div class="main-col">
+        <div class="main-topbar">
+          <button
+            type="button"
+            class="icon-btn"
+            title="Tools & session"
+            onclick="
+              document.getElementById('devDetails').open =
+                !document.getElementById('devDetails').open
+            "
+          >
+            <svg
+              fill="none"
+              stroke="currentColor"
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <div class="main-scroll">
+          <div class="hero-block" id="heroBlock">
+            <div class="hero-orb" aria-hidden="true"></div>
+            <p class="hero-greeting" id="heroGreeting">
+              Good day.
+              <span id="heroSub">Start a chat or pick a conversation.</span>
+            </p>
+          </div>
+
+          <div class="messages-wrap empty" id="messagesWrap">
+            <div id="messages"></div>
+          </div>
+
+          <div class="composer-card">
+            <textarea
+              id="messageInput"
+              rows="2"
+              placeholder="What's on your mind?"
+            ></textarea>
+            <div class="composer-actions">
+              <div class="composer-left">
+                <button
+                  type="button"
+                  class="icon-btn"
+                  title="New session"
+                  onclick="newSession()"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="icon-btn"
+                  title="Voice (placeholder)"
+                  disabled
+                  style="opacity: 0.35"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <button class="btn-generate" id="sendBtn" onclick="sendMessage()">
+                <span>Send</span>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71L12 2z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="quick-cards">
+            <button
+              type="button"
+              class="quick-card"
+              onclick="
+                newSession();
+                document.getElementById('messageInput').focus();
+              "
+            >
+              <h3>New conversation</h3>
+              <p>Start a fresh session with the agent</p>
+            </button>
+            <button
+              type="button"
+              class="quick-card"
+              onclick="document.getElementById('messageInput').focus()"
+            >
+              <h3>Continue chat</h3>
+              <p>Type below to message the sales agent</p>
+            </button>
+            <button
+              type="button"
+              class="quick-card"
+              onclick="document.querySelector('.dev-accordion').open = true"
+            >
+              <h3>Lead slots</h3>
+              <p>View captured fields in the right panel</p>
+            </button>
+            <button type="button" class="quick-card" onclick="refreshCache()">
+              <h3>Refresh knowledge</h3>
+              <p>Reload RAG cache from the server</p>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="history-col" aria-label="Chats and tools">
+        <div class="history-header">Chats</div>
+        <div class="chat-search" id="chatSearchRow" style="display: none">
+          <input
+            type="search"
+            id="chatSearchInput"
+            placeholder="Search sessions…"
+            autocomplete="off"
+          />
+        </div>
+        <div class="sessions-list" id="sessionsList">
+          <span class="sessions-empty">No chats yet</span>
+        </div>
+
+        <details class="dev-accordion" id="devDetails">
+          <summary>Developer</summary>
+          <div class="dev-panels">
+            <div class="panel-block">
+              <h2>Lead slots</h2>
+              <table class="slots-table">
+                <tbody>
+                  <tr>
+                    <td>firstName</td>
+                    <td class="slot-empty" id="slot-firstName">—</td>
+                  </tr>
+                  <tr>
+                    <td>lastName</td>
+                    <td class="slot-empty" id="slot-lastName">—</td>
+                  </tr>
+                  <tr>
+                    <td>email</td>
+                    <td class="slot-empty" id="slot-email">—</td>
+                  </tr>
+                  <tr>
+                    <td>phone</td>
+                    <td class="slot-empty" id="slot-phone">—</td>
+                  </tr>
+                  <tr>
+                    <td>countryCode <span style="opacity: 0.6">(opt)</span></td>
+                    <td class="slot-empty" id="slot-countryCode">—</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      preferredContact <span style="opacity: 0.6">(opt)</span>
+                    </td>
+                    <td class="slot-empty" id="slot-preferredContactMethod">
+                      —
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>nationality <span style="opacity: 0.6">(opt)</span></td>
+                    <td class="slot-empty" id="slot-nationality">—</td>
+                  </tr>
+                  <tr>
+                    <td>licenseType <span style="opacity: 0.6">(opt)</span></td>
+                    <td class="slot-empty" id="slot-licenseType">—</td>
+                  </tr>
+                  <tr>
+                    <td>package <span style="opacity: 0.6">(opt)</span></td>
+                    <td class="slot-empty" id="slot-package">—</td>
+                  </tr>
+                  <tr>
+                    <td>needUAEVisa <span style="opacity: 0.6">(opt)</span></td>
+                    <td class="slot-empty" id="slot-needUAEVisa">—</td>
+                  </tr>
+                  <tr>
+                    <td>totalVisas <span style="opacity: 0.6">(opt)</span></td>
+                    <td class="slot-empty" id="slot-totalNumberOfVisa">—</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div id="submittedBadge" style="display: none">
+                <span class="submitted-badge">Lead submitted</span>
+              </div>
+            </div>
+            <div class="panel-block">
+              <h2>Session</h2>
+              <div class="user-input-row">
+                <label for="userIdInput">User ID</label>
+                <input
+                  id="userIdInput"
+                  class="user-id-input"
+                  type="text"
+                  placeholder="X-User-Id header"
+                  autocomplete="off"
+                />
+                <span
+                  id="userActiveBadge"
+                  class="user-active-badge"
+                  style="display: none"
+                ></span>
+              </div>
+              <div class="rate-limit-note">
+                Sent as X-User-Id — auto-filled from Cognito when signed in
+              </div>
+              <div class="session-id-display" id="sessionIdDisplay">
+                Not started
+              </div>
+              <button class="btn-small danger" onclick="newSession()">
+                New session
+              </button>
+              <button
+                class="btn-small"
+                id="refreshCacheBtn"
+                onclick="refreshCache()"
+              >
+                Refresh cache
+              </button>
+              <button class="btn-small" type="button" id="btnSignOut">
+                Sign out
+              </button>
+            </div>
+            <div class="panel-block">
+              <h2>Session data</h2>
+              <div class="raw-data-label">Chat metadata</div>
+              <pre id="rawChatMetadata" class="raw-json">{}</pre>
+              <div class="raw-data-label">Lead data</div>
+              <pre id="rawLeadData" class="raw-json">{}</pre>
+              <div class="raw-data-label">Dynamic data</div>
+              <pre id="rawDynamicData" class="raw-json">{}</pre>
+            </div>
+            <div class="panel-block">
+              <h2>Debug log</h2>
+              <div id="logOutput"></div>
+            </div>
+          </div>
+        </details>
+      </aside>
+    </div>
+
+    <script>
+      /** ── AWS Cognito (OAuth2 + PKCE, public client) ───────────────
+       * 1. Create a User Pool App client WITHOUT client secret.
+       * 2. Add callback URL(s) e.g. http://localhost:3000/index.html
+       * 3. Set hosted UI domain: https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-assign-domain.html
+       */
+      const COGNITO_CONFIG = {
+        // e.g. "my-app.auth.eu-west-1.amazoncognito.com" (no https://)
+        domain: "",
+        clientId: "",
+        // Must exactly match an allowed callback URL on the app client
+        redirectUri: window.location.href.split("#")[0].split("?")[0],
+        region: "eu-west-1",
+      };
+      const COGNITO_STORAGE_KEY = "rak-inc-cognito-tokens";
+      const PKCE_VERIFIER_KEY = "rak-inc-pkce-verifier";
+
+      function cognitoAuthEnabled() {
+        return Boolean(COGNITO_CONFIG.domain && COGNITO_CONFIG.clientId);
+      }
+
+      function parseJwtPayload(jwt) {
+        try {
+          const p = jwt.split(".")[1];
+          const json = atob(p.replace(/-/g, "+").replace(/_/g, "/"));
+          return JSON.parse(json);
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function getStoredTokens() {
+        try {
+          return JSON.parse(
+            sessionStorage.getItem(COGNITO_STORAGE_KEY) || "null",
+          );
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function setStoredTokens(obj) {
+        sessionStorage.setItem(COGNITO_STORAGE_KEY, JSON.stringify(obj));
+      }
+
+      function clearStoredTokens() {
+        sessionStorage.removeItem(COGNITO_STORAGE_KEY);
+      }
+
+      function base64UrlEncode(buf) {
+        const bytes = new Uint8Array(buf);
+        let s = btoa(String.fromCharCode.apply(null, bytes));
+        return s.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      }
+
+      async function sha256Base64Url(str) {
+        const data = new TextEncoder().encode(str);
+        const hash = await crypto.subtle.digest("SHA-256", data);
+        return base64UrlEncode(hash);
+      }
+
+      function randomString(len) {
+        const a = new Uint8Array(len);
+        crypto.getRandomValues(a);
+        return base64UrlEncode(a);
+      }
+
+      async function startCognitoLogin() {
+        if (!cognitoAuthEnabled()) {
+          alert("Configure COGNITO_DOMAIN and COGNITO_CLIENT_ID in index.html");
+          return;
+        }
+        const verifier = randomString(32);
+        sessionStorage.setItem(PKCE_VERIFIER_KEY, verifier);
+        const challenge = await sha256Base64Url(verifier);
+        const params = new URLSearchParams({
+          client_id: COGNITO_CONFIG.clientId,
+          response_type: "code",
+          scope: "openid email profile",
+          redirect_uri: COGNITO_CONFIG.redirectUri,
+          code_challenge_method: "S256",
+          code_challenge: challenge,
+        });
+        const url =
+          "https://" +
+          COGNITO_CONFIG.domain +
+          "/oauth2/authorize?" +
+          params.toString();
+        window.location.assign(url);
+      }
+
+      async function exchangeCodeForTokens(code) {
+        const verifier = sessionStorage.getItem(PKCE_VERIFIER_KEY);
+        sessionStorage.removeItem(PKCE_VERIFIER_KEY);
+        if (!verifier) throw new Error("Missing PKCE verifier");
+
+        const body = new URLSearchParams({
+          grant_type: "authorization_code",
+          client_id: COGNITO_CONFIG.clientId,
+          code,
+          redirect_uri: COGNITO_CONFIG.redirectUri,
+          code_verifier: verifier,
+        });
+        const tokenUrl = "https://" + COGNITO_CONFIG.domain + "/oauth2/token";
+        const res = await fetch(tokenUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: body.toString(),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(
+            data.error_description || data.error || "Token error",
+          );
+        }
+        setStoredTokens({
+          access_token: data.access_token,
+          id_token: data.id_token,
+          refresh_token: data.refresh_token,
+          expires_at: Date.now() + (data.expires_in || 3600) * 1000,
+        });
+        const clean = COGNITO_CONFIG.redirectUri;
+        window.history.replaceState({}, document.title, clean);
+      }
+
+      function showApp() {
+        document.getElementById("screen-signin").style.display = "none";
+        document.getElementById("screen-app").classList.add("visible");
+      }
+
+      function showSignIn() {
+        document.getElementById("screen-signin").style.display = "flex";
+        document.getElementById("screen-app").classList.remove("visible");
+      }
+
+      function applyUserProfileFromTokens() {
+        const t = getStoredTokens();
+        let display = "there";
+        let sub = "";
+        if (t && t.id_token) {
+          const claims = parseJwtPayload(t.id_token);
+          display =
+            claims.name ||
+            claims.email ||
+            claims["cognito:username"] ||
+            "there";
+          sub = claims.sub || "";
+        }
+        const hour = new Date().getHours();
+        let greet = "Good day";
+        if (hour < 12) greet = "Good morning";
+        else if (hour < 18) greet = "Good afternoon";
+        else greet = "Good evening";
+        document.getElementById("heroGreeting").innerHTML =
+          greet +
+          ", " +
+          escapeHtml(display) +
+          '. <span id="heroSub">How can the sales agent help you today?</span>';
+        const initials = display
+          .split(/\s|@/)
+          .map((x) => x[0])
+          .join("")
+          .substring(0, 2)
+          .toUpperCase();
+        document.getElementById("railAccountBtn").textContent = initials || "?";
+
+        const uidInput = document.getElementById("userIdInput");
+        if (sub && (!uidInput.value || uidInput.dataset.fromCognito === "1")) {
+          uidInput.value = sub;
+          uidInput.dataset.fromCognito = "1";
+          onUserIdChange();
+        }
+      }
+
+      async function initAuth() {
+        if (!cognitoAuthEnabled()) {
+          document.getElementById("btnSignOut").style.display = "none";
+          showApp();
+          applyUserProfileFromTokens();
+          return;
+        }
+        document.getElementById("btnSignOut").style.display = "";
+
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get("code");
+        if (code) {
+          try {
+            await exchangeCodeForTokens(code);
+          } catch (e) {
+            console.error(e);
+            alert("Sign-in failed: " + e.message);
+          }
+        }
+
+        const tokens = getStoredTokens();
+        if (!tokens || !tokens.id_token) {
+          showSignIn();
+          return;
+        }
+        showApp();
+        applyUserProfileFromTokens();
+        document.getElementById("btnSignOut").style.display = "";
+      }
+
+      document
+        .getElementById("btnCognitoSignIn")
+        .addEventListener("click", startCognitoLogin);
+      document.getElementById("btnSignOut").addEventListener("click", () => {
+        clearStoredTokens();
+        if (cognitoAuthEnabled()) {
+          const logoutUrl =
+            "https://" +
+            COGNITO_CONFIG.domain +
+            "/logout?client_id=" +
+            encodeURIComponent(COGNITO_CONFIG.clientId) +
+            "&logout_uri=" +
+            encodeURIComponent(COGNITO_CONFIG.redirectUri);
+          window.location.assign(logoutUrl);
+        } else {
+          showApp();
+        }
+      });
+
+      document
+        .getElementById("btnToggleSearch")
+        .addEventListener("click", () => {
+          const row = document.getElementById("chatSearchRow");
+          row.style.display = row.style.display === "none" ? "block" : "none";
+          if (row.style.display === "block")
+            document.getElementById("chatSearchInput").focus();
+        });
+
+      document
+        .getElementById("chatSearchInput")
+        .addEventListener("input", () => renderSessionsList());
+
+      // ── Chat app (original logic) ─────────────────────────────────────────────
+      const API_BASE = "";
+      const STORAGE_KEY = "sales-agent-sessions";
+      const USER_ID_KEY = "sales-agent-user-id";
+
+      let sessionId = null;
+      let isSending = false;
+      let cachedGreeting = null;
+
+      function getUserId() {
+        return document.getElementById("userIdInput").value.trim();
+      }
+
+      function onUserIdChange() {
+        const val = getUserId();
+        localStorage.setItem(USER_ID_KEY, val);
+        const badge = document.getElementById("userActiveBadge");
+        if (val) {
+          badge.textContent = val.length > 14 ? val.slice(0, 12) + "…" : val;
+          badge.style.display = "";
+        } else {
+          badge.style.display = "none";
+        }
+        renderSessionsList();
+      }
+
+      function authHeaders(extra) {
+        const h = Object.assign({ "Content-Type": "application/json" }, extra);
+        const uid = getUserId();
+        if (uid) h["X-User-Id"] = uid;
+        const t = getStoredTokens();
+        if (t && t.id_token) h["Authorization"] = "Bearer " + t.id_token;
+        return h;
+      }
+
+      function log(msg, cls = "") {
+        const el = document.getElementById("logOutput");
+        const line = document.createElement("span");
+        if (cls) line.className = cls;
+        line.textContent =
+          "[" + new Date().toISOString().substring(11, 23) + "] " + msg + "\n";
+        el.appendChild(line);
+        el.scrollTop = el.scrollHeight;
+      }
+
+      function updateHeroVisibility() {
+        const wrap = document.getElementById("messagesWrap");
+        const hero = document.getElementById("heroBlock");
+        const msgs = document.getElementById("messages");
+        const hasMessages = msgs.children.length > 0;
+        if (hasMessages) {
+          wrap.classList.add("visible");
+          wrap.classList.remove("empty");
+          hero.classList.add("hidden");
+        } else {
+          wrap.classList.remove("visible");
+          wrap.classList.add("empty");
+          hero.classList.remove("hidden");
+        }
+      }
+
+      function appendMessage(role, text) {
+        const container = document.getElementById("messages");
+        const div = document.createElement("div");
+        div.className = "msg " + role;
+        div.innerHTML =
+          '<div class="msg-label">' +
+          (role === "user" ? "You" : "Sales Agent") +
+          '</div><div class="msg-bubble">' +
+          escapeHtml(text) +
+          "</div>";
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+        updateHeroVisibility();
+        return div;
+      }
+
+      function appendTyping() {
+        const container = document.getElementById("messages");
+        const div = document.createElement("div");
+        div.className = "msg assistant typing";
+        div.id = "typingIndicator";
+        div.innerHTML = '<div class="msg-bubble">Agent is thinking…</div>';
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+        updateHeroVisibility();
+      }
+
+      function removeTyping() {
+        const el = document.getElementById("typingIndicator");
+        if (el) el.remove();
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function updateRawData(chatMetadata, leadData, dynamicData) {
+        document.getElementById("rawChatMetadata").textContent = JSON.stringify(
+          chatMetadata || {},
+          null,
+          2,
+        );
+        document.getElementById("rawLeadData").textContent = JSON.stringify(
+          leadData || {},
+          null,
+          2,
+        );
+        document.getElementById("rawDynamicData").textContent = JSON.stringify(
+          dynamicData || {},
+          null,
+          2,
+        );
+      }
+
+      const SLOT_FIELDS = [
+        "firstName",
+        "lastName",
+        "email",
+        "phone",
+        "countryCode",
+        "preferredContactMethod",
+        "nationality",
+        "licenseType",
+        "package",
+        "needUAEVisa",
+        "totalNumberOfVisa",
+      ];
+
+      function updateSlots(slots, leadSubmitted) {
+        SLOT_FIELDS.forEach((field) => {
+          const cell = document.getElementById("slot-" + field);
+          if (!cell) return;
+          const val = slots && slots[field];
+          const hasValue = val !== null && val !== undefined && val !== "";
+          if (hasValue) {
+            cell.textContent = String(val);
+            cell.className = "slot-filled";
+          } else {
+            cell.textContent = "—";
+            cell.className = "slot-empty";
+          }
+        });
+        document.getElementById("submittedBadge").style.display = leadSubmitted
+          ? ""
+          : "none";
+      }
+
+      function loadStoredSessions() {
+        try {
+          return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function storeSession(id, titleHint) {
+        const uid = getUserId();
+        const sessions = loadStoredSessions().filter((s) => s.id !== id);
+        sessions.unshift({
+          id,
+          createdAt: Date.now(),
+          userId: uid || null,
+          title: titleHint || "",
+        });
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(sessions.slice(0, 50)),
+        );
+        renderSessionsList();
+      }
+
+      function formatAge(ts) {
+        const s = Math.floor((Date.now() - ts) / 1000);
+        if (s < 60) return s + "s ago";
+        if (s < 3600) return Math.floor(s / 60) + "m ago";
+        if (s < 86400) return Math.floor(s / 3600) + "h ago";
+        return Math.floor(s / 86400) + "d ago";
+      }
+
+      function sessionTitle(s) {
+        if (s.title) return s.title;
+        const id = s.id;
+        return id.substring(0, 8) + "…" + id.substring(id.length - 4);
+      }
+
+      function renderSessionsList() {
+        const container = document.getElementById("sessionsList");
+        const uid = getUserId();
+        const q = (document.getElementById("chatSearchInput").value || "")
+          .trim()
+          .toLowerCase();
+        const all = loadStoredSessions();
+        let sessions = uid
+          ? all.filter((s) => !s.userId || s.userId === uid)
+          : all;
+        if (q) {
+          sessions = sessions.filter((s) => {
+            const t = sessionTitle(s).toLowerCase();
+            return t.includes(q) || s.id.toLowerCase().includes(q);
+          });
+        }
+
+        if (sessions.length === 0) {
+          container.innerHTML = q
+            ? '<span class="sessions-empty">No matching chats</span>'
+            : uid
+              ? '<span class="sessions-empty">No chats for this user</span>'
+              : '<span class="sessions-empty">No chats yet</span>';
+          return;
+        }
+
+        container.innerHTML = "";
+        sessions.forEach((s) => {
+          const item = document.createElement("div");
+          item.className =
+            "session-item" + (s.id === sessionId ? " active" : "");
+          item.title = s.id + (s.userId ? " · " + s.userId : "");
+          item.innerHTML =
+            '<div class="session-item-dot"></div><div class="session-item-body"><div class="session-item-title">' +
+            escapeHtml(sessionTitle(s)) +
+            '</div><div class="session-item-sub">' +
+            formatAge(s.createdAt) +
+            '</div></div><button class="session-delete-btn" title="Delete">×</button>';
+          item
+            .querySelector(".session-delete-btn")
+            .addEventListener("click", (e) => deleteSession(s.id, e));
+          item.addEventListener("click", () => loadSession(s.id));
+          container.appendChild(item);
+        });
+      }
+
+      async function deleteSession(id, event) {
+        event.stopPropagation();
+        try {
+          await fetch(API_BASE + "/api/session/" + id, { method: "DELETE" });
+        } catch (e) {}
+
+        const sessions = loadStoredSessions().filter((s) => s.id !== id);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+
+        if (id === sessionId) {
+          sessionId = null;
+          document.getElementById("messages").innerHTML = "";
+          document.getElementById("logOutput").innerHTML = "";
+          updateSlots({}, false);
+          updateRawData({}, {}, {});
+          document.getElementById("sessionIdDisplay").textContent =
+            "Not started";
+          setInputEnabled(false);
+          updateHeroVisibility();
+          log("Active session deleted", "log-info");
+        }
+
+        renderSessionsList();
+      }
+
+      function setInputEnabled(enabled) {
+        const input = document.getElementById("messageInput");
+        const btn = document.getElementById("sendBtn");
+        input.disabled = !enabled;
+        btn.disabled = !enabled;
+        input.placeholder = enabled
+          ? "What's on your mind?"
+          : "Start or load a session to chat…";
+      }
+
+      async function loadSession(id) {
+        if (isSending) return;
+        log("Loading session " + id + "…", "log-info");
+
+        try {
+          const res = await fetch(API_BASE + "/api/session/" + id);
+          if (!res.ok) {
+            log("Session not found: " + id, "log-error");
+            return;
+          }
+          const data = await res.json();
+
+          document.getElementById("messages").innerHTML = "";
+          document.getElementById("logOutput").innerHTML = "";
+          updateSlots({}, false);
+
+          sessionId = id;
+          document.getElementById("sessionIdDisplay").textContent = id;
+          renderSessionsList();
+
+          (data.messages || []).forEach((m) =>
+            appendMessage(m.role, m.content),
+          );
+
+          const slots = Object.assign(
+            {},
+            data.leadData || {},
+            data.dynamicData || {},
+          );
+          const submitted = (data.chatMetadata || {}).submitted || false;
+          updateSlots(slots, submitted);
+          updateRawData(
+            data.chatMetadata,
+            data.leadData || {},
+            data.dynamicData || {},
+          );
+
+          setInputEnabled(true);
+          updateHeroVisibility();
+          log(
+            "Session loaded: " + (data.messages || []).length + " messages",
+            "log-success",
+          );
+        } catch (e) {
+          log("Failed to load session: " + e.message, "log-error");
+        }
+      }
+
+      function setSessionId(id, firstUserMessage) {
+        const isNew = id !== sessionId;
+        sessionId = id;
+        document.getElementById("sessionIdDisplay").textContent = id;
+        if (isNew) {
+          const hint =
+            firstUserMessage && firstUserMessage.length > 48
+              ? firstUserMessage.slice(0, 45) + "…"
+              : firstUserMessage || "";
+          storeSession(id, hint);
+        } else {
+          renderSessionsList();
+        }
+      }
+
+      async function newSession() {
+        if (isSending) return;
+        document.getElementById("messages").innerHTML = "";
+        updateSlots({}, false);
+        updateRawData({}, {}, {});
+        document.getElementById("logOutput").innerHTML = "";
+        sessionId = null;
+        document.getElementById("sessionIdDisplay").textContent = "Creating…";
+        renderSessionsList();
+        updateHeroVisibility();
+
+        const uid = getUserId();
+        log("→ POST /api/session" + (uid ? " | userId=" + uid : ""), "log-dim");
+
+        try {
+          const res = await fetch(API_BASE + "/api/session", {
+            method: "POST",
+            headers: authHeaders(),
+          });
+          const data = await res.json();
+
+          if (!res.ok) {
+            log(
+              "HTTP " +
+                res.status +
+                ": " +
+                (data.error || JSON.stringify(data)),
+              "log-error",
+            );
+            document.getElementById("sessionIdDisplay").textContent = "Error";
+            return;
+          }
+
+          setSessionId(data.sessionId, "");
+          setInputEnabled(true);
+          log("Session created: " + data.sessionId, "log-success");
+        } catch (e) {
+          log("Failed to create session: " + e.message, "log-error");
+          document.getElementById("sessionIdDisplay").textContent = "Error";
+          return;
+        }
+
+        if (cachedGreeting) {
+          appendMessage("assistant", cachedGreeting);
+        }
+      }
+
+      function truncate(str, max = 200) {
+        if (!str) return "";
+        return str.length > max ? str.substring(0, max) + "…" : str;
+      }
+
+      function fmtJson(obj, truncateStrings = false) {
+        if (obj == null) return "null";
+        try {
+          if (truncateStrings) {
+            const walk = (v) => {
+              if (typeof v === "string") return truncate(v, 120);
+              if (Array.isArray(v)) return v.map(walk);
+              if (v && typeof v === "object") {
+                const r = {};
+                for (const k of Object.keys(v)) r[k] = walk(v[k]);
+                return r;
+              }
+              return v;
+            };
+            return JSON.stringify(walk(obj), null, 2);
+          }
+          return JSON.stringify(obj, null, 2);
+        } catch (e) {
+          return String(obj);
+        }
+      }
+
+      const TOOL_ICONS = {
+        updateLeadSlots: "✏️ ",
+        updateChatMetadata: "🏷️ ",
+        searchProductKnowledge: "📚",
+        submitLead: "🚀",
+        updateLead: "🔄",
+        extractConversationNotes: "📝",
+      };
+
+      function renderToolCalls(toolCalls) {
+        if (!toolCalls || toolCalls.length === 0) {
+          log("  (no tool calls this turn)", "log-dim");
+          return;
+        }
+        toolCalls.forEach((call) => {
+          const icon = TOOL_ICONS[call.tool] || "🔧";
+          log(`${icon} ${call.tool}`, "log-tool");
+          if (call.input && Object.keys(call.input).length > 0) {
+            const inputDisplay = Object.assign({}, call.input);
+            delete inputDisplay.sessionId;
+            log(
+              "  ↳ input:  " +
+                fmtJson(inputDisplay).replace(/\n/g, "\n           "),
+              "log-tool-data",
+            );
+          }
+          if (call.output != null) {
+            let outputVal = call.output;
+            if (typeof outputVal === "string") {
+              try {
+                outputVal = JSON.parse(outputVal);
+              } catch (_) {}
+            }
+            log(
+              "  ↳ output: " +
+                fmtJson(outputVal, true).replace(/\n/g, "\n           "),
+              "log-tool-data",
+            );
+          }
+        });
+      }
+
+      async function sendMessage() {
+        const input = document.getElementById("messageInput");
+        const message = input.value.trim();
+        if (!message || isSending) return;
+
+        isSending = true;
+        document.getElementById("sendBtn").disabled = true;
+        input.value = "";
+        autoResize(input);
+
+        appendMessage("user", message);
+        appendTyping();
+
+        const body = { message };
+        if (sessionId) body.sessionId = sessionId;
+
+        const uid = getUserId();
+        log(
+          "→ POST /api/chat | session=" +
+            (sessionId || "new") +
+            (uid ? " | userId=" + uid : ""),
+          "log-dim",
+        );
+
+        try {
+          const res = await fetch(API_BASE + "/api/chat", {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify(body),
+          });
+          const data = await res.json();
+          removeTyping();
+
+          if (res.status === 429) {
+            log(
+              'Token budget exceeded for user "' +
+                (uid || "?") +
+                '": ' +
+                (data.message || data.error),
+              "log-error",
+            );
+            appendMessage(
+              "assistant",
+              "⚠ Hourly token limit reached. Please wait before sending more messages.",
+            );
+          } else if (!res.ok) {
+            log(
+              "HTTP " +
+                res.status +
+                ": " +
+                (data.error || JSON.stringify(data)),
+              "log-error",
+            );
+            appendMessage(
+              "assistant",
+              "⚠ Error: " + (data.error || "Unknown error"),
+            );
+          } else {
+            setSessionId(data.sessionId, message);
+            appendMessage("assistant", data.reply || "(empty response)");
+            updateSlots(data.slots, data.leadSubmitted);
+            updateRawData(data.chatMetadata, data.leadData, data.dynamicData);
+            renderToolCalls(data.toolCalls);
+            log("← reply received", "log-success");
+            if (data.leadSubmitted)
+              log("Lead submitted to Salesforce!", "log-success");
+          }
+        } catch (e) {
+          removeTyping();
+          log("Request failed: " + e.message, "log-error");
+          appendMessage(
+            "assistant",
+            "⚠ Connection error. Is the server running?",
+          );
+        }
+
+        isSending = false;
+        document.getElementById("sendBtn").disabled = false;
+        input.focus();
+      }
+
+      function autoResize(el) {
+        el.style.height = "auto";
+        el.style.height = Math.min(el.scrollHeight, 140) + "px";
+      }
+
+      document
+        .getElementById("messageInput")
+        .addEventListener("input", function () {
+          autoResize(this);
+        });
+      document
+        .getElementById("messageInput")
+        .addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+          }
+        });
+
+      async function refreshCache() {
+        const btn = document.getElementById("refreshCacheBtn");
+        btn.disabled = true;
+        btn.textContent = "Refreshing…";
+        log("→ POST /api/cache/refresh", "log-dim");
+        try {
+          const res = await fetch(API_BASE + "/api/cache/refresh", {
+            method: "POST",
+          });
+          const data = await res.json();
+          if (res.ok) {
+            log(
+              "Cache refreshed at " +
+                (data.timestamp || new Date().toISOString()),
+              "log-success",
+            );
+            await loadGreeting();
+          } else {
+            log(
+              "Cache refresh failed: " + (data.error || res.status),
+              "log-error",
+            );
+          }
+        } catch (e) {
+          log("Cache refresh error: " + e.message, "log-error");
+        }
+        btn.disabled = false;
+        btn.textContent = "Refresh cache";
+      }
+
+      async function loadGreeting() {
+        try {
+          const res = await fetch(API_BASE + "/api/greeting");
+          const data = await res.json();
+          if (data.message) cachedGreeting = data.message;
+        } catch (e) {}
+      }
+
+      setInputEnabled(false);
+
+      const savedUserId = localStorage.getItem(USER_ID_KEY) || "";
+      if (savedUserId) {
+        document.getElementById("userIdInput").value = savedUserId;
+        if (!getStoredTokens())
+          document.getElementById("userIdInput").dataset.fromCognito = "";
+        onUserIdChange();
+      }
+      document
+        .getElementById("userIdInput")
+        .addEventListener("input", function () {
+          this.dataset.fromCognito = "";
+          onUserIdChange();
+        });
+
+      renderSessionsList();
+      loadGreeting();
+
+      initAuth().then(() => {
+        if (document.getElementById("screen-app").classList.contains("visible"))
+          applyUserProfileFromTokens();
+      });
+    </script>
+  </body>
+</html>

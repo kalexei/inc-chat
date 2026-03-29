@@ -21,10 +21,7 @@ export default function Home() {
 
   if (!ready) {
     return (
-      <div
-        className="rak-app rak-app--visible items-center justify-center"
-        style={{ color: "var(--rak-text-muted)" }}
-      >
+      <div className="flex h-dvh items-center justify-center bg-background text-muted-foreground">
         Loading…
       </div>
     );

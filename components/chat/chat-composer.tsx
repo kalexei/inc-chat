@@ -1,5 +1,14 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import type { RefObject } from "react";
 import { IconMic, IconPlus, IconSendSpark } from "./icons";
 
@@ -21,50 +30,81 @@ export function ChatComposer({
   onAutoResize,
 }: ChatComposerProps) {
   return (
-    <div className="composer-card">
-      <textarea
-        ref={textareaRef}
-        rows={2}
-        placeholder="What's on your mind?"
-        disabled={!inputEnabled}
-        onInput={onAutoResize}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            onSend();
-          }
-        }}
-      />
-      <div className="composer-actions">
-        <div className="composer-left">
-          <button
-            type="button"
-            className="icon-btn"
-            title="New session"
-            onClick={() => onNewSession()}
-          >
-            <IconPlus size={20} />
-          </button>
-          <button
-            type="button"
-            className="icon-btn"
-            title="Voice (placeholder)"
-            disabled
-            style={{ opacity: 0.35 }}
-          >
-            <IconMic />
-          </button>
+    <Card className="gap-0 border-border/80 bg-card/80 py-0 shadow-lg shadow-black/20 ring-1 ring-border/60 backdrop-blur-sm">
+      <CardContent className="p-3">
+        <Textarea
+          ref={textareaRef}
+          rows={2}
+          placeholder="What's on your mind?"
+          disabled={!inputEnabled}
+          className={cn(
+            "min-h-[52px] resize-none border-0 bg-transparent px-0 py-1 text-[15px] shadow-none",
+            "focus-visible:ring-0",
+          )}
+          onInput={onAutoResize}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              onSend();
+            }
+          }}
+        />
+        <div className="mt-2 flex items-center justify-between gap-2 border-t border-border/60 pt-2">
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  title="New session"
+                  onClick={() => onNewSession()}
+                >
+                  <IconPlus size={20} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">New session</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    title="Voice (coming soon)"
+                    disabled
+                    className="opacity-35"
+                  >
+                    <IconMic />
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top">Voice input (coming soon)</TooltipContent>
+            </Tooltip>
+          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                disabled={isSending || !inputEnabled}
+                className="gap-2 rounded-full px-5"
+                onClick={() => onSend()}
+              >
+                <span>Send</span>
+                <IconSendSpark />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              {isSending
+                ? "Sending…"
+                : !inputEnabled
+                  ? "Start or load a session to send"
+                  : "Send message (Enter)"}
+            </TooltipContent>
+          </Tooltip>
         </div>
-        <button
-          type="button"
-          className="btn-generate"
-          disabled={isSending || !inputEnabled}
-          onClick={() => onSend()}
-        >
-          <span>Send</span>
-          <IconSendSpark />
-        </button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

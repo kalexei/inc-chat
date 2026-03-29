@@ -1,6 +1,7 @@
 "use client";
 
 import { getApiBase } from "@/lib/api-base";
+import { applySalesAgentApiKey } from "@/lib/sales-agent-auth";
 import { USER_ID_KEY } from "@/lib/chat-constants";
 import { logToolCalls } from "@/lib/chat/log-tool-calls";
 import {
@@ -12,7 +13,6 @@ import {
 import type {
   ChatApiResponse,
   ChatMessage,
-  LogLine,
   SessionApiResponse,
   StoredSession,
 } from "@/lib/chat-types";
@@ -34,9 +34,7 @@ import {
 
 export function useSalesAgentChat() {
   const apiBase = getApiBase();
-  const devRef = useRef<HTMLDetailsElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const logEndRef = useRef<HTMLDivElement>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [typing, setTyping] = useState(false);
@@ -52,8 +50,6 @@ export function useSalesAgentChat() {
   );
   const [leadData, setLeadData] = useState<Record<string, unknown>>({});
   const [dynamicData, setDynamicData] = useState<Record<string, unknown>>({});
-  const [logLines, setLogLines] = useState<LogLine[]>([]);
-  const logId = useRef(0);
   const [storedSessions, setStoredSessions] = useState<StoredSession[]>([]);
   const [sessionSearch, setSessionSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -61,26 +57,21 @@ export function useSalesAgentChat() {
   const [initials, setInitials] = useState("?");
   const [heroLine, setHeroLine] = useState("Good day.");
   const [heroSub, setHeroSub] = useState(
-    "Start a chat or pick a conversation.",
+    "Ask about free zone packages, pricing, flagged countries, and more.",
   );
   const [isSending, setIsSending] = useState(false);
 
-  const log = useCallback((msg: string, cls?: string) => {
-    const ts = new Date().toISOString().substring(11, 23);
-    const id = ++logId.current;
-    setLogLines((prev) =>
-      [...prev, { id, text: `[${ts}] ${msg}`, cls }].slice(-300),
-    );
+  const log = useCallback((msg: string, _cls?: string) => {
+    if (process.env.NODE_ENV === "development") {
+      console.debug(`[sales-agent] ${msg}`);
+    }
   }, []);
-
-  useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [logLines]);
 
   const authHeaders = useCallback(
     (extra?: HeadersInit) => {
       const h = new Headers(extra);
       h.set("Content-Type", "application/json");
+      applySalesAgentApiKey(h);
       if (userId.trim()) h.set("X-User-Id", userId.trim());
       const t = getStoredTokens();
       if (t?.id_token) h.set("Authorization", `Bearer ${t.id_token}`);
@@ -120,7 +111,9 @@ export function useSalesAgentChat() {
     const saved = localStorage.getItem(USER_ID_KEY) || "";
     startTransition(() => {
       setHeroLine(`${greet}, ${display}.`);
-      setHeroSub("How can the sales agent help you today?");
+      setHeroSub(
+        "Ask about free zone packages, pricing, flagged countries, and compliance.",
+      );
       const ini = display
         .split(/\s|@/)
         .map((x) => x[0])
@@ -136,14 +129,16 @@ export function useSalesAgentChat() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`${apiBase}/api/greeting`);
+        const res = await fetch(`${apiBase}/api/greeting`, {
+          headers: authHeaders(),
+        });
         const data = (await res.json()) as { message?: string };
         if (data.message) setCachedGreeting(data.message);
       } catch {
         /* ignore */
       }
     })();
-  }, [apiBase]);
+  }, [apiBase, authHeaders]);
 
   const filteredSessions = useMemo(() => {
     const uid = userId.trim();
@@ -219,7 +214,6 @@ export function useSalesAgentChat() {
     setMessages([]);
     updateSlotsFromResponse({}, false);
     updateRaw({}, {}, {});
-    setLogLines([]);
     setSessionId(null);
     setSessionLabel("Creating…");
     setStoredSessions(loadStoredSessions());
@@ -266,14 +260,15 @@ export function useSalesAgentChat() {
       if (isSending) return;
       log(`Loading session ${id}…`, "log-info");
       try {
-        const res = await fetch(`${apiBase}/api/session/${id}`);
+        const res = await fetch(`${apiBase}/api/session/${id}`, {
+          headers: authHeaders(),
+        });
         if (!res.ok) {
           log(`Session not found: ${id}`, "log-error");
           return;
         }
         const data = (await res.json()) as SessionApiResponse;
         setMessages([]);
-        setLogLines([]);
         setSessionId(id);
         setSessionLabel(id);
         setStoredSessions(loadStoredSessions());
@@ -300,7 +295,7 @@ export function useSalesAgentChat() {
         log(`Failed to load session: ${(e as Error).message}`, "log-error");
       }
     },
-    [apiBase, isSending, log, updateRaw, updateSlotsFromResponse],
+    [apiBase, authHeaders, isSending, log, updateRaw, updateSlotsFromResponse],
   );
 
   const autoResize = useCallback(() => {
@@ -314,7 +309,10 @@ export function useSalesAgentChat() {
     async (id: string, e: React.MouseEvent) => {
       e.stopPropagation();
       try {
-        await fetch(`${apiBase}/api/session/${id}`, { method: "DELETE" });
+        await fetch(`${apiBase}/api/session/${id}`, {
+          method: "DELETE",
+          headers: authHeaders(),
+        });
       } catch {
         /* best-effort */
       }
@@ -324,7 +322,6 @@ export function useSalesAgentChat() {
       if (id === sessionId) {
         setSessionId(null);
         setMessages([]);
-        setLogLines([]);
         updateSlotsFromResponse({}, false);
         updateRaw({}, {}, {});
         setSessionLabel("Not started");
@@ -332,7 +329,7 @@ export function useSalesAgentChat() {
         log("Active session deleted", "log-info");
       }
     },
-    [apiBase, sessionId, log, updateRaw, updateSlotsFromResponse],
+    [apiBase, authHeaders, sessionId, log, updateRaw, updateSlotsFromResponse],
   );
 
   const sendMessage = useCallback(async () => {
@@ -436,18 +433,36 @@ export function useSalesAgentChat() {
     autoResize,
   ]);
 
+  const sendSuggestedPrompt = useCallback(
+    async (text: string) => {
+      const input = textareaRef.current;
+      if (!input || isSending) return;
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      input.value = trimmed;
+      autoResize();
+      await sendMessage();
+    },
+    [isSending, sendMessage, autoResize],
+  );
+
   const refreshCache = useCallback(async () => {
     setRefreshBusy(true);
     log("→ POST /api/cache/refresh", "log-dim");
     try {
-      const res = await fetch(`${apiBase}/api/cache/refresh`, { method: "POST" });
+      const res = await fetch(`${apiBase}/api/cache/refresh`, {
+        method: "POST",
+        headers: authHeaders(),
+      });
       const data = (await res.json()) as { timestamp?: string; error?: string };
       if (res.ok) {
         log(
           `Cache refreshed at ${data.timestamp || new Date().toISOString()}`,
           "log-success",
         );
-        const g = await fetch(`${apiBase}/api/greeting`);
+        const g = await fetch(`${apiBase}/api/greeting`, {
+          headers: authHeaders(),
+        });
         const gj = (await g.json()) as { message?: string };
         if (gj.message) setCachedGreeting(gj.message);
       } else {
@@ -457,7 +472,7 @@ export function useSalesAgentChat() {
       log(`Cache refresh error: ${(e as Error).message}`, "log-error");
     }
     setRefreshBusy(false);
-  }, [apiBase, log]);
+  }, [apiBase, authHeaders, log]);
 
   const signOut = useCallback(() => {
     clearStoredTokens();
@@ -465,17 +480,8 @@ export function useSalesAgentChat() {
     if (url) window.location.assign(url);
   }, []);
 
-  const openDeveloperPanel = useCallback(() => {
-    devRef.current?.scrollIntoView({ behavior: "smooth" });
-    if (devRef.current) devRef.current.open = true;
-  }, []);
-
-  const toggleDeveloperPanel = useCallback(() => {
-    if (devRef.current) devRef.current.open = !devRef.current.open;
-  }, []);
-
   return {
-    refs: { devRef, textareaRef, logEndRef },
+    refs: { textareaRef },
     initials,
     showSearch,
     setShowSearch,
@@ -495,21 +501,14 @@ export function useSalesAgentChat() {
     typing,
     inputEnabled,
     isSending,
-    slots,
-    leadSubmitted,
-    chatMetadata,
-    leadData,
-    dynamicData,
-    logLines,
     newSession,
     loadSession,
     deleteSession,
     sendMessage,
+    sendSuggestedPrompt,
     refreshCache,
     signOut,
     autoResize,
-    openDeveloperPanel,
-    toggleDeveloperPanel,
     syncSessionsFromStorage: () => setStoredSessions(loadStoredSessions()),
   };
 }

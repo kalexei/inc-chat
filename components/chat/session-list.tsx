@@ -5,8 +5,19 @@ import {
   sessionTitle,
 } from "@/lib/chat/sessions";
 import type { StoredSession } from "@/lib/chat-types";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  SidebarInput,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
+import { MessageSquare, Trash2 } from "lucide-react";
 
 type SessionListProps = {
+  className?: string;
   sessions: StoredSession[];
   activeSessionId: string | null;
   userId: string;
@@ -18,6 +29,7 @@ type SessionListProps = {
 };
 
 export function SessionList({
+  className,
   sessions,
   activeSessionId,
   userId,
@@ -34,56 +46,62 @@ export function SessionList({
       : "No chats yet";
 
   return (
-    <>
-      {showSearch && (
-        <div className="chat-search">
-          <input
+    <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
+      {showSearch ? (
+        <div className="shrink-0 border-b border-border px-2 py-2">
+          <SidebarInput
             type="search"
-            placeholder="Search sessions…"
+            placeholder="Search chat history…"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             autoComplete="off"
+            className="bg-background/60 text-sm"
           />
         </div>
-      )}
-      <div className="sessions-list">
-        {sessions.length === 0 ? (
-          <span className="sessions-empty">{emptyMessage}</span>
-        ) : (
-          sessions.map((s) => (
-            <div
-              key={s.id}
-              className={`session-item${s.id === activeSessionId ? " active" : ""}`}
-              title={s.userId ? `${s.id} · ${s.userId}` : s.id}
-              onClick={() => void onSelect(s.id)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  void onSelect(s.id);
-                }
-              }}
-              role="button"
-              tabIndex={0}
-            >
-              <div className="session-item-dot" />
-              <div className="session-item-body">
-                <div className="session-item-title">{sessionTitle(s)}</div>
-                <div className="session-item-sub">
-                  {formatSessionAge(s.createdAt)}
-                </div>
-              </div>
-              <button
-                type="button"
-                className="session-delete-btn"
-                title="Delete"
-                onClick={(e) => void onDelete(s.id, e)}
-              >
-                ×
-              </button>
-            </div>
-          ))
-        )}
-      </div>
-    </>
+      ) : null}
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="p-2 pr-3">
+          {sessions.length === 0 ? (
+            <p className="px-2 py-6 text-center text-sm text-muted-foreground">
+              {emptyMessage}
+            </p>
+          ) : (
+            <SidebarMenu className="gap-0.5">
+              {sessions.map((s) => {
+                const active = s.id === activeSessionId;
+                return (
+                  <SidebarMenuItem key={s.id}>
+                    <SidebarMenuButton
+                      isActive={active}
+                      className="h-auto min-h-8 py-2 pr-8"
+                      title={s.userId ? `${s.id} · ${s.userId}` : s.id}
+                      onClick={() => void onSelect(s.id)}
+                    >
+                      <MessageSquare className="mt-0.5 shrink-0 opacity-60" />
+                      <div className="grid min-w-0 flex-1 text-left leading-tight">
+                        <span className="truncate text-sm font-medium">
+                          {sessionTitle(s)}
+                        </span>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {formatSessionAge(s.createdAt)}
+                        </span>
+                      </div>
+                    </SidebarMenuButton>
+                    <SidebarMenuAction
+                      showOnHover
+                      title="Delete chat"
+                      onClick={(e) => void onDelete(s.id, e)}
+                    >
+                      <Trash2 className="size-3.5" />
+                      <span className="sr-only">Delete</span>
+                    </SidebarMenuAction>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          )}
+        </div>
+      </ScrollArea>
+    </div>
   );
 }

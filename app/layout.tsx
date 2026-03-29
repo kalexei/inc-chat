@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import { Montserrat, Geist } from "next/font/google";
-import "./globals.css";
-import "./chat-ui.css";
+import { Montserrat } from "next/font/google";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+import "./globals.css";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -23,8 +21,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("h-full", montserrat.variable, "font-sans", geist.variable)}>
-      <body className="rak-body min-h-full antialiased">{children}</body>
+    <html
+      lang="en"
+      className={cn("h-full dark", montserrat.variable)}
+      suppressHydrationWarning
+    >
+      <body className="min-h-full overflow-hidden bg-background font-sans antialiased">
+        <TooltipProvider delayDuration={300}>{children}</TooltipProvider>
+      </body>
     </html>
   );
 }

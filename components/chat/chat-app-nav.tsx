@@ -84,13 +84,34 @@ export function ChatAppNav({
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              tooltip="Search chat history"
-              onClick={onToggleSearch}
-            >
-              <Search />
-              <span>Search</span>
-            </SidebarMenuButton>
+            {showSearch ? (
+              <div className="flex items-center gap-1 px-2">
+                <Search className="size-4 shrink-0 text-muted-foreground" />
+                <SidebarInput
+                  type="search"
+                  placeholder="Search chat history…"
+                  value={sessionSearch}
+                  onChange={(e) => onSessionSearchChange(e.target.value)}
+                  autoComplete="off"
+                  autoFocus
+                  className="h-8 text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      onSessionSearchChange("");
+                      onToggleSearch();
+                    }
+                  }}
+                />
+              </div>
+            ) : (
+              <SidebarMenuButton
+                tooltip="Search chat history"
+                onClick={onToggleSearch}
+              >
+                <Search />
+                <span>Search</span>
+              </SidebarMenuButton>
+            )}
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarSeparator className="my-2 group-data-[collapsible=icon]:hidden" />
@@ -104,8 +125,6 @@ export function ChatAppNav({
             activeSessionId={activeSessionId}
             userId={userId}
             searchQuery={sessionSearch}
-            showSearch={showSearch}
-            onSearchChange={onSessionSearchChange}
             onSelect={onSelectSession}
             onDelete={onDeleteSession}
           />

@@ -1,8 +1,9 @@
 "use client";
 
 import type { ChatMessage } from "@/lib/chat-types";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import type { RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import { ChatComposer } from "./chat-composer";
 import { ChatMessageList } from "./chat-message-list";
 import { ChatQuickCards } from "./chat-quick-cards";
@@ -37,12 +38,23 @@ export function ChatMainColumn({
   onAutoResize,
   onPickSuggestion,
 }: ChatMainColumnProps) {
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!hasMessages) return;
+    const viewport = scrollAreaRef.current?.querySelector<HTMLDivElement>(
+      '[data-slot="scroll-area-viewport"]'
+    );
+    if (!viewport) return;
+    viewport.scrollTop = viewport.scrollHeight;
+  }, [hasMessages, messages, typing]);
+
   return (
     <div className="relative order-2 flex min-h-0 min-w-0 flex-1 flex-col bg-background">
       <header className="flex h-12 shrink-0 items-center gap-2 border-b px-2 md:px-3">
         <SidebarTrigger className="md:flex" />
       </header>
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-6 pt-4 md:px-8">
+      <div className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-4 md:px-8">
         <div
           className={cn(
             "mx-auto flex w-full max-w-3xl flex-col items-center gap-6 py-8 transition-opacity duration-200",
@@ -66,16 +78,19 @@ export function ChatMainColumn({
           </p>
         </div>
 
-        <div
+        <ScrollArea
+          ref={scrollAreaRef}
           className={cn(
-            "mx-auto w-full max-w-3xl flex-1",
-            !hasMessages && "min-h-0"
+            "mx-auto w-full max-w-3xl",
+            hasMessages ? "min-h-0 flex-1" : "flex-1"
           )}
         >
-          <ChatMessageList messages={messages} typing={typing} />
-        </div>
+          <div className="pr-3">
+            <ChatMessageList messages={messages} typing={typing} />
+          </div>
+        </ScrollArea>
 
-        <div className="mx-auto mt-4 w-full max-w-3xl space-y-4">
+        <div className="mx-auto mt-4 w-full max-w-3xl shrink-0 space-y-4">
           <ChatComposer
             textareaRef={textareaRef}
             inputEnabled={inputEnabled}

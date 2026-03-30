@@ -10,7 +10,7 @@ export function ChatApp() {
   const { textareaRef } = chat.refs;
 
   return (
-    <SidebarProvider defaultOpen className="min-h-dvh">
+    <SidebarProvider defaultOpen className="h-dvh min-h-0">
       <ChatAppNav
         initials={chat.initials}
         showSignOut={chat.showSignOut}

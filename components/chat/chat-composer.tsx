@@ -10,7 +10,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { RefObject } from "react";
-import { IconMic, IconSendSpark } from "./icons";
+import { IconMic } from "./icons";
+import { SendIcon } from "lucide-react";
 
 type ChatComposerProps = {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
@@ -38,12 +39,14 @@ export function ChatComposer({
           ref={textareaRef}
           rows={2}
           placeholder={
-            inputEnabled ? "Type a message…" : "Start or load a session to chat…"
+            inputEnabled
+              ? "Type a message…"
+              : "Start or load a session to chat…"
           }
           disabled={isSending || !inputEnabled}
           className={cn(
             "min-h-[60px] resize-none border-0 bg-transparent px-2.5 py-2 text-[16px] shadow-none",
-            "focus-visible:ring-0",
+            "focus-visible:ring-0"
           )}
           onInput={onAutoResize}
           onKeyDown={(e) => {
@@ -70,7 +73,9 @@ export function ChatComposer({
                   </Button>
                 </span>
               </TooltipTrigger>
-              <TooltipContent side="top">Voice input (coming soon)</TooltipContent>
+              <TooltipContent side="top">
+                Voice input (coming soon)
+              </TooltipContent>
             </Tooltip>
           </div>
           <Tooltip>
@@ -82,15 +87,15 @@ export function ChatComposer({
                 onClick={() => onSend()}
               >
                 <span>Send</span>
-                <IconSendSpark />
+                <SendIcon className="size-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">
               {isSending
                 ? "Sending…"
                 : !inputEnabled
-                  ? "Create or open a session first"
-                  : "Send message (Enter)"}
+                ? "Create or open a session first"
+                : "Send message (Enter)"}
             </TooltipContent>
           </Tooltip>
         </div>

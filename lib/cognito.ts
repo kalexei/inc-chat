@@ -9,7 +9,8 @@ export type CognitoTokens = {
 };
 
 export function getCognitoConfig() {
-  const domain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN?.trim() || "";
+  const domain =
+    process.env.NEXT_PUBLIC_COGNITO_DOMAIN?.trim().replace(/^https?:\/\//, "") || "";
   const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID?.trim() || "";
   const redirectUri =
     process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI?.trim() ||
@@ -90,9 +91,10 @@ export async function startCognitoLogin() {
     code_challenge_method: "S256",
     code_challenge: challenge,
   });
-  window.location.assign(
-    `https://${domain}/oauth2/authorize?${params.toString()}`,
-  );
+  const authUrl = domain.startsWith("http")
+    ? `${domain}/oauth2/authorize`
+    : `https://${domain}/oauth2/authorize`;
+  window.location.assign(`${authUrl}?${params.toString()}`);
 }
 
 export async function exchangeCodeForTokens(code: string) {

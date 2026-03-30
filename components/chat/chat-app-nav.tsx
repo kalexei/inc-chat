@@ -1,11 +1,13 @@
 "use client";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
+  SidebarInput,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -13,7 +15,8 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import type { StoredSession } from "@/lib/chat-types";
-import { LogOut, Plus, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { LogOut, Plus, RefreshCw, Search } from "lucide-react";
 import { SessionList } from "./session-list";
 
 type ChatAppNavProps = {
@@ -24,6 +27,10 @@ type ChatAppNavProps = {
   filteredSessions: StoredSession[];
   activeSessionId: string | null;
   userId: string;
+  sessionLabel: string;
+  refreshBusy: boolean;
+  onUserIdChange: (value: string) => void;
+  onRefreshCache: () => void;
   onNewChat: () => void;
   onToggleSearch: () => void;
   onSessionSearchChange: (value: string) => void;
@@ -40,6 +47,10 @@ export function ChatAppNav({
   filteredSessions,
   activeSessionId,
   userId,
+  sessionLabel,
+  refreshBusy,
+  onUserIdChange,
+  onRefreshCache,
   onNewChat,
   onToggleSearch,
   onSessionSearchChange,
@@ -67,10 +78,7 @@ export function ChatAppNav({
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              tooltip="New chat"
-              onClick={() => onNewChat()}
-            >
+            <SidebarMenuButton tooltip="New chat" onClick={() => onNewChat()}>
               <Plus />
               <span>New chat</span>
             </SidebarMenuButton>
@@ -103,7 +111,51 @@ export function ChatAppNav({
           />
         </div>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="gap-2">
+        <div
+          className={cn(
+            "space-y-2 px-1 group-data-[collapsible=icon]:hidden",
+          )}
+        >
+          <div className="space-y-1">
+            <label
+              htmlFor="sidebar-user-id"
+              className="text-xs font-medium text-muted-foreground"
+            >
+              User ID
+            </label>
+            <SidebarInput
+              id="sidebar-user-id"
+              type="text"
+              placeholder="e.g. user-alice"
+              value={userId}
+              autoComplete="off"
+              onChange={(e) => onUserIdChange(e.target.value)}
+            />
+            <p className="text-[0.65rem] leading-snug text-muted-foreground">
+              Sent as X-User-Id — enables token budget testing per user
+            </p>
+          </div>
+          <div
+            className="truncate rounded-md border border-border/60 bg-muted/30 px-2 py-1.5 font-mono text-[0.65rem] text-muted-foreground"
+            title={sessionLabel}
+          >
+            {sessionLabel}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full gap-2"
+            disabled={refreshBusy}
+            onClick={() => onRefreshCache()}
+          >
+            <RefreshCw
+              className={cn("size-3.5", refreshBusy && "animate-spin")}
+            />
+            {refreshBusy ? "Refreshing…" : "Refresh cache"}
+          </Button>
+        </div>
         <SidebarMenu>
           {showSignOut ? (
             <SidebarMenuItem>

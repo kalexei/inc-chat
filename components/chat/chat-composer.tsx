@@ -35,8 +35,10 @@ export function ChatComposer({
         <Textarea
           ref={textareaRef}
           rows={2}
-          placeholder="What's on your mind?"
-          disabled={!inputEnabled}
+          placeholder={
+            inputEnabled ? "Type a message…" : "Start or load a session to chat…"
+          }
+          disabled={isSending || !inputEnabled}
           className={cn(
             "min-h-[52px] resize-none border-0 bg-transparent px-0 py-1 text-[15px] shadow-none",
             "focus-visible:ring-0",
@@ -99,7 +101,7 @@ export function ChatComposer({
               {isSending
                 ? "Sending…"
                 : !inputEnabled
-                  ? "Start or load a session to send"
+                  ? "Create or open a session first"
                   : "Send message (Enter)"}
             </TooltipContent>
           </Tooltip>

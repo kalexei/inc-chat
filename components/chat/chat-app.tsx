@@ -19,6 +19,13 @@ export function ChatApp() {
         filteredSessions={chat.filteredSessions}
         activeSessionId={chat.sessionId}
         userId={chat.userId}
+        sessionLabel={chat.sessionLabel}
+        refreshBusy={chat.refreshBusy}
+        onUserIdChange={(value) => {
+          chat.setUserId(value);
+          chat.syncSessionsFromStorage();
+        }}
+        onRefreshCache={() => void chat.refreshCache()}
         onNewChat={() => void chat.newSession()}
         onToggleSearch={() => chat.setShowSearch((v) => !v)}
         onSessionSearchChange={chat.setSessionSearch}

@@ -35,13 +35,14 @@ import {
 export function useSalesAgentChat() {
   const apiBase = getApiBase();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  /** Keeps latest session id for fetch bodies (avoids stale closure after `await newSession()`). */
+  const sessionIdRef = useRef<string | null>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [typing, setTyping] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionLabel, setSessionLabel] = useState("Not started");
   const [userId, setUserId] = useState("");
-  const [inputEnabled, setInputEnabled] = useState(false);
   const [cachedGreeting, setCachedGreeting] = useState<string | null>(null);
   const [slots, setSlots] = useState<Record<string, unknown>>({});
   const [leadSubmitted, setLeadSubmitted] = useState(false);
@@ -60,6 +61,8 @@ export function useSalesAgentChat() {
     "Ask about free zone packages, pricing, flagged countries, and more.",
   );
   const [isSending, setIsSending] = useState(false);
+  /** Matches `index.html`: disabled until a session is created or loaded. */
+  const [inputEnabled, setInputEnabled] = useState(false);
 
   const log = useCallback((msg: string, _cls?: string) => {
     if (process.env.NODE_ENV === "development") {
@@ -89,6 +92,10 @@ export function useSalesAgentChat() {
   useEffect(() => {
     localStorage.setItem(USER_ID_KEY, userId);
   }, [userId]);
+
+  useEffect(() => {
+    sessionIdRef.current = sessionId;
+  }, [sessionId]);
 
   useEffect(() => {
     const t = getStoredTokens();
@@ -208,13 +215,14 @@ export function useSalesAgentChat() {
     [pushSession, userId],
   );
 
-  const newSession = useCallback(async () => {
-    if (isSending) return;
+  const newSession = useCallback(async (): Promise<boolean> => {
+    if (isSending) return false;
     setIsSending(true);
     setMessages([]);
     updateSlotsFromResponse({}, false);
     updateRaw({}, {}, {});
     setSessionId(null);
+    sessionIdRef.current = null;
     setSessionLabel("Creating…");
     setStoredSessions(loadStoredSessions());
 
@@ -230,19 +238,24 @@ export function useSalesAgentChat() {
         log(`HTTP ${res.status}: ${data.error || JSON.stringify(data)}`, "log-error");
         setSessionLabel("Error");
         setIsSending(false);
-        return;
+        return false;
       }
-      setSessionAndStore(data.sessionId!, "", true);
+      const sid = data.sessionId!;
+      sessionIdRef.current = sid;
+      setSessionAndStore(sid, "", true);
       setInputEnabled(true);
-      log(`Session created: ${data.sessionId}`, "log-success");
+      log(`Session created: ${sid}`, "log-success");
       if (cachedGreeting) {
         setMessages([{ role: "assistant", content: cachedGreeting }]);
       }
+      setIsSending(false);
+      return true;
     } catch (e) {
       log(`Failed to create session: ${(e as Error).message}`, "log-error");
       setSessionLabel("Error");
+      setIsSending(false);
+      return false;
     }
-    setIsSending(false);
   }, [
     isSending,
     apiBase,
@@ -269,6 +282,7 @@ export function useSalesAgentChat() {
         }
         const data = (await res.json()) as SessionApiResponse;
         setMessages([]);
+        sessionIdRef.current = id;
         setSessionId(id);
         setSessionLabel(id);
         setStoredSessions(loadStoredSessions());
@@ -320,6 +334,7 @@ export function useSalesAgentChat() {
       persistSessions(next);
       setStoredSessions(next);
       if (id === sessionId) {
+        sessionIdRef.current = null;
         setSessionId(null);
         setMessages([]);
         updateSlotsFromResponse({}, false);
@@ -345,10 +360,11 @@ export function useSalesAgentChat() {
     setTyping(true);
 
     const body: { message: string; sessionId?: string } = { message };
-    if (sessionId) body.sessionId = sessionId;
+    const sidForChat = sessionIdRef.current;
+    if (sidForChat) body.sessionId = sidForChat;
     const uid = userId.trim();
     log(
-      `→ POST /api/chat | session=${sessionId || "new"}${uid ? ` | userId=${uid}` : ""}`,
+      `→ POST /api/chat | session=${sidForChat || "new"}${uid ? ` | userId=${uid}` : ""}`,
       "log-dim",
     );
 
@@ -387,7 +403,7 @@ export function useSalesAgentChat() {
           },
         ]);
       } else {
-        const isNewSession = data.sessionId !== sessionId;
+        const isNewSession = data.sessionId !== sidForChat;
         setSessionAndStore(data.sessionId, message, isNewSession);
         setMessages((m) => [
           ...m,
@@ -422,7 +438,6 @@ export function useSalesAgentChat() {
     input.focus();
   }, [
     isSending,
-    sessionId,
     userId,
     apiBase,
     authHeaders,
@@ -437,13 +452,17 @@ export function useSalesAgentChat() {
     async (text: string) => {
       const input = textareaRef.current;
       if (!input || isSending) return;
+      if (!inputEnabled) {
+        const ok = await newSession();
+        if (!ok) return;
+      }
       const trimmed = text.trim();
       if (!trimmed) return;
       input.value = trimmed;
       autoResize();
       await sendMessage();
     },
-    [isSending, sendMessage, autoResize],
+    [isSending, inputEnabled, newSession, sendMessage, autoResize],
   );
 
   const refreshCache = useCallback(async () => {

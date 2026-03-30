@@ -30,27 +30,6 @@ const FREEZONE_SUGGESTIONS = [
     prompt:
       "Do you need a physical office, flexi desk, or can you operate remotely.",
   },
-  {
-    title: "Setup timeline",
-    description:
-      "Steps, required documents, and the typical timeline for company setup.",
-    prompt:
-      "Steps, required documents, and how long company setup usually takes.",
-  },
-  {
-    title: "Banking assistance",
-    description:
-      "Corporate bank account opening support and the documents you’ll need.",
-    prompt:
-      "Opening a corporate bank account and what documents are required.",
-  },
-  {
-    title: "Relocation to UAE",
-    description:
-      "Relocation steps, residency visas, and what it’s like living in Ras Al Khaimah.",
-    prompt:
-      "Moving to the UAE, residency visas, and living in Ras Al Khaimah.",
-  },
 ] as const;
 
 type ChatQuickCardsProps = {
@@ -65,7 +44,7 @@ export function ChatQuickCards({
   if (!visible) return null;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 pb-4">
       <p className="text-xs font-medium text-muted-foreground">
         Suggested questions
       </p>
@@ -79,7 +58,7 @@ export function ChatQuickCards({
             className={cn(
               "cursor-pointer gap-2 border-border/80 bg-card/40 py-3 shadow-sm",
               "ring-1 ring-border/40 transition-colors hover:bg-muted/50",
-              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             )}
             onClick={() => onPickSuggestion(c.prompt)}
             onKeyDown={(e) => {

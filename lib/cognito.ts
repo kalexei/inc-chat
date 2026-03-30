@@ -91,10 +91,9 @@ export async function startCognitoLogin() {
     code_challenge_method: "S256",
     code_challenge: challenge,
   });
-  const authUrl = domain.startsWith("http")
-    ? `${domain}/oauth2/authorize`
-    : `https://${domain}/oauth2/authorize`;
-  window.location.assign(`${authUrl}?${params.toString()}`);
+  window.location.assign(
+    `https://${domain}/oauth2/authorize?${params.toString()}`,
+  );
 }
 
 export async function exchangeCodeForTokens(code: string) {

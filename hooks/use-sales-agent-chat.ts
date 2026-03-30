@@ -2,10 +2,8 @@
 
 import { getApiBase } from "@/lib/api-base";
 import { applySalesAgentApiKey } from "@/lib/sales-agent-auth";
-import { USER_ID_KEY } from "@/lib/chat-constants";
 import { logToolCalls } from "@/lib/chat/log-tool-calls";
 import {
-  formatSessionAge,
   loadStoredSessions,
   persistSessions,
   sessionTitle,
@@ -18,7 +16,6 @@ import type {
 } from "@/lib/chat-types";
 import {
   clearStoredTokens,
-  cognitoAuthEnabled,
   getCognitoLogoutUrl,
   getStoredTokens,
   parseJwtPayload,
@@ -42,29 +39,26 @@ export function useSalesAgentChat() {
   const [typing, setTyping] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionLabel, setSessionLabel] = useState("Not started");
-  const [userId, setUserId] = useState("");
   const [cachedGreeting, setCachedGreeting] = useState<string | null>(null);
-  const [slots, setSlots] = useState<Record<string, unknown>>({});
-  const [leadSubmitted, setLeadSubmitted] = useState(false);
-  const [chatMetadata, setChatMetadata] = useState<Record<string, unknown>>(
-    {},
-  );
-  const [leadData, setLeadData] = useState<Record<string, unknown>>({});
-  const [dynamicData, setDynamicData] = useState<Record<string, unknown>>({});
+  const [, setSlots] = useState<Record<string, unknown>>({});
+  const [, setLeadSubmitted] = useState(false);
+  const [, setChatMetadata] = useState<Record<string, unknown>>({});
+  const [, setLeadData] = useState<Record<string, unknown>>({});
+  const [, setDynamicData] = useState<Record<string, unknown>>({});
   const [storedSessions, setStoredSessions] = useState<StoredSession[]>([]);
   const [sessionSearch, setSessionSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [refreshBusy, setRefreshBusy] = useState(false);
   const [initials, setInitials] = useState("?");
   const [heroLine, setHeroLine] = useState("Good day.");
-  const [heroSub, setHeroSub] = useState(
-    "Ask about free zone packages, pricing, flagged countries, and more.",
-  );
+  const [heroSub] = useState("");
   const [isSending, setIsSending] = useState(false);
   /** Matches `index.html`: disabled until a session is created or loaded. */
   const [inputEnabled, setInputEnabled] = useState(false);
+  const didAutoCreateRef = useRef(false);
 
   const log = useCallback((msg: string, _cls?: string) => {
+    void _cls; // for optional class tags used by callers
     if (process.env.NODE_ENV === "development") {
       console.debug(`[sales-agent] ${msg}`);
     }
@@ -75,12 +69,11 @@ export function useSalesAgentChat() {
       const h = new Headers(extra);
       h.set("Content-Type", "application/json");
       applySalesAgentApiKey(h);
-      if (userId.trim()) h.set("X-User-Id", userId.trim());
       const t = getStoredTokens();
       if (t?.id_token) h.set("Authorization", `Bearer ${t.id_token}`);
       return h;
     },
-    [userId],
+    [],
   );
 
   useEffect(() => {
@@ -90,17 +83,12 @@ export function useSalesAgentChat() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(USER_ID_KEY, userId);
-  }, [userId]);
-
-  useEffect(() => {
     sessionIdRef.current = sessionId;
   }, [sessionId]);
 
   useEffect(() => {
     const t = getStoredTokens();
     let display = "there";
-    let sub = "";
     if (t?.id_token) {
       const claims = parseJwtPayload(t.id_token);
       display =
@@ -108,19 +96,15 @@ export function useSalesAgentChat() {
         (claims.email as string) ||
         (claims["cognito:username"] as string) ||
         "there";
-      sub = (claims.sub as string) || "";
     }
     const hour = new Date().getHours();
     let greet = "Good day";
     if (hour < 12) greet = "Good morning";
     else if (hour < 18) greet = "Good afternoon";
     else greet = "Good evening";
-    const saved = localStorage.getItem(USER_ID_KEY) || "";
     startTransition(() => {
-      setHeroLine(`${greet}, ${display}.`);
-      setHeroSub(
-        "Ask about free zone packages, pricing, flagged countries, and compliance.",
-      );
+      // Keep the default copy short; only tweak punctuation for the "there" case.
+      setHeroLine(`${greet}, ${display}${display === "there" ? "!" : "."}`);
       const ini = display
         .split(/\s|@/)
         .map((x) => x[0])
@@ -128,8 +112,6 @@ export function useSalesAgentChat() {
         .slice(0, 2)
         .toUpperCase();
       setInitials(ini || "?");
-      if (sub) setUserId(sub);
-      else if (saved) setUserId(saved);
     });
   }, []);
 
@@ -148,11 +130,8 @@ export function useSalesAgentChat() {
   }, [apiBase, authHeaders]);
 
   const filteredSessions = useMemo(() => {
-    const uid = userId.trim();
     const q = sessionSearch.trim().toLowerCase();
-    let list = uid
-      ? storedSessions.filter((s) => !s.userId || s.userId === uid)
-      : storedSessions;
+    let list = storedSessions;
     if (q) {
       list = list.filter(
         (s) =>
@@ -161,7 +140,7 @@ export function useSalesAgentChat() {
       );
     }
     return list;
-  }, [storedSessions, userId, sessionSearch]);
+  }, [storedSessions, sessionSearch]);
 
   const hasMessages = messages.length > 0;
 
@@ -186,12 +165,12 @@ export function useSalesAgentChat() {
     [],
   );
 
-  const pushSession = useCallback((id: string, titleHint: string, uid: string) => {
+  const pushSession = useCallback((id: string, titleHint: string) => {
     const next = loadStoredSessions().filter((s) => s.id !== id);
     next.unshift({
       id,
       createdAt: Date.now(),
-      userId: uid || null,
+      userId: null,
       title: titleHint,
     });
     persistSessions(next);
@@ -207,17 +186,18 @@ export function useSalesAgentChat() {
           firstUserMessage && firstUserMessage.length > 48
             ? firstUserMessage.slice(0, 45) + "…"
             : firstUserMessage || "";
-        pushSession(id, hint, userId.trim());
+        pushSession(id, hint);
       } else {
         setStoredSessions(loadStoredSessions());
       }
     },
-    [pushSession, userId],
+    [pushSession],
   );
 
   const newSession = useCallback(async (): Promise<boolean> => {
     if (isSending) return false;
     setIsSending(true);
+    setInputEnabled(false);
     setMessages([]);
     updateSlotsFromResponse({}, false);
     updateRaw({}, {}, {});
@@ -226,8 +206,7 @@ export function useSalesAgentChat() {
     setSessionLabel("Creating…");
     setStoredSessions(loadStoredSessions());
 
-    const uid = userId.trim();
-    log(`→ POST /api/session${uid ? ` | userId=${uid}` : ""}`, "log-dim");
+    log(`→ POST /api/session`, "log-dim");
     try {
       const res = await fetch(`${apiBase}/api/session`, {
         method: "POST",
@@ -236,7 +215,9 @@ export function useSalesAgentChat() {
       const data = (await res.json()) as { sessionId?: string; error?: string };
       if (!res.ok) {
         log(`HTTP ${res.status}: ${data.error || JSON.stringify(data)}`, "log-error");
-        setSessionLabel("Error");
+        setSessionLabel(
+          data.error ? `Error: ${data.error}` : `Error (${res.status})`,
+        );
         setIsSending(false);
         return false;
       }
@@ -252,7 +233,7 @@ export function useSalesAgentChat() {
       return true;
     } catch (e) {
       log(`Failed to create session: ${(e as Error).message}`, "log-error");
-      setSessionLabel("Error");
+      setSessionLabel("Error creating session");
       setIsSending(false);
       return false;
     }
@@ -265,7 +246,6 @@ export function useSalesAgentChat() {
     setSessionAndStore,
     updateRaw,
     updateSlotsFromResponse,
-    userId,
   ]);
 
   const loadSession = useCallback(
@@ -311,6 +291,24 @@ export function useSalesAgentChat() {
     },
     [apiBase, authHeaders, isSending, log, updateRaw, updateSlotsFromResponse],
   );
+
+  // On first load: restore the most recent stored session (if any),
+  // otherwise create a brand new one.
+  useEffect(() => {
+    if (didAutoCreateRef.current) return;
+    if (inputEnabled) return;
+    didAutoCreateRef.current = true;
+    void (async () => {
+      // Defer so React doesn't see synchronous state updates during the effect body.
+      await Promise.resolve();
+      const sessions = loadStoredSessions();
+      if (sessions.length > 0) {
+        await loadSession(sessions[0]!.id);
+      } else {
+        void newSession();
+      }
+    })();
+  }, [inputEnabled, loadSession, newSession]);
 
   const autoResize = useCallback(() => {
     const el = textareaRef.current;
@@ -362,11 +360,7 @@ export function useSalesAgentChat() {
     const body: { message: string; sessionId?: string } = { message };
     const sidForChat = sessionIdRef.current;
     if (sidForChat) body.sessionId = sidForChat;
-    const uid = userId.trim();
-    log(
-      `→ POST /api/chat | session=${sidForChat || "new"}${uid ? ` | userId=${uid}` : ""}`,
-      "log-dim",
-    );
+    log(`→ POST /api/chat | session=${sidForChat || "new"}`, "log-dim");
 
     try {
       const res = await fetch(`${apiBase}/api/chat`, {
@@ -379,7 +373,7 @@ export function useSalesAgentChat() {
 
       if (res.status === 429) {
         log(
-          `Token budget exceeded for user "${uid || "?"}": ${data.message || data.error}`,
+          `Token budget exceeded: ${data.message || data.error}`,
           "log-error",
         );
         setMessages((m) => [
@@ -438,7 +432,6 @@ export function useSalesAgentChat() {
     input.focus();
   }, [
     isSending,
-    userId,
     apiBase,
     authHeaders,
     log,
@@ -508,11 +501,10 @@ export function useSalesAgentChat() {
     setSessionSearch,
     filteredSessions,
     sessionId,
-    userId,
-    setUserId,
+    userId: "",
     sessionLabel,
     refreshBusy,
-    showSignOut: cognitoAuthEnabled(),
+    showSignOut: false,
     hasMessages,
     heroLine,
     heroSub,

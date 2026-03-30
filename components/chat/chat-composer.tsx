@@ -10,7 +10,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { RefObject } from "react";
-import { IconMic, IconPlus, IconSendSpark } from "./icons";
+import { IconMic, IconSendSpark } from "./icons";
 
 type ChatComposerProps = {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
@@ -26,9 +26,11 @@ export function ChatComposer({
   inputEnabled,
   isSending,
   onSend,
-  onNewSession,
+  onNewSession: _onNewSession,
   onAutoResize,
 }: ChatComposerProps) {
+  void _onNewSession; // kept for API compatibility; "+" session creation button is hidden
+
   return (
     <Card className="gap-0 border-border/80 bg-card/80 py-0 shadow-lg shadow-black/20 ring-1 ring-border/60 backdrop-blur-sm">
       <CardContent className="p-3">
@@ -40,7 +42,7 @@ export function ChatComposer({
           }
           disabled={isSending || !inputEnabled}
           className={cn(
-            "min-h-[52px] resize-none border-0 bg-transparent px-0 py-1 text-[15px] shadow-none",
+            "min-h-[60px] resize-none border-0 bg-transparent px-2.5 py-2 text-[16px] shadow-none",
             "focus-visible:ring-0",
           )}
           onInput={onAutoResize}
@@ -53,20 +55,6 @@ export function ChatComposer({
         />
         <div className="mt-2 flex items-center justify-between gap-2 border-t border-border/60 pt-2">
           <div className="flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  title="New session"
-                  onClick={() => onNewSession()}
-                >
-                  <IconPlus size={20} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">New session</TooltipContent>
-            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="inline-flex">

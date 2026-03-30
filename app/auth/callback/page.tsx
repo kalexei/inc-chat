@@ -14,7 +14,10 @@ function CallbackInner() {
   useEffect(() => {
     const code = searchParams.get("code");
     if (!code) {
-      setMsg("Missing authorization code.");
+      // Defer state update to avoid sync setState inside effect body.
+      void Promise.resolve().then(() => {
+        setMsg("Missing authorization code.");
+      });
       return;
     }
     void (async () => {

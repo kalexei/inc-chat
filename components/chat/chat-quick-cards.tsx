@@ -10,43 +10,46 @@ import { cn } from "@/lib/utils";
 
 const FREEZONE_SUGGESTIONS = [
   {
-    title: "Package pricing",
+    title: "Company setup cost",
     description:
-      "Compare free zone incorporation packages, what is included, and ballpark costs.",
+      "Packages, inclusions, and an estimated total setup cost for your company.",
     prompt:
-      "What free zone incorporation packages do you offer, what is included in each tier, and what are the typical price ranges?",
+      "Free zone incorporation packages, what's included, and estimated total setup cost.",
   },
   {
-    title: "Flagged & restricted countries",
+    title: "Business activities",
     description:
-      "Nationalities or countries that need extra checks or are not accepted.",
+      "Allowed activities and guidance on choosing the right activity for your business.",
     prompt:
-      "Which countries or nationalities are flagged, restricted, or require enhanced due diligence for RAK free zone company formation?",
+      "Which business activities are allowed and how to choose the right activity for your company.",
   },
   {
-    title: "License types",
+    title: "Office requirements",
     description:
-      "Commercial, professional, industrial, and which activities fit each.",
+      "Whether you need a physical office, a flexi desk, or remote operation is possible.",
     prompt:
-      "Explain the main free zone license types (e.g. commercial, professional, industrial) and which business activities fit each.",
+      "Do you need a physical office, flexi desk, or can you operate remotely.",
   },
   {
     title: "Setup timeline",
-    description: "Steps, documents, and how long setup usually takes.",
+    description:
+      "Steps, required documents, and the typical timeline for company setup.",
     prompt:
-      "What are the typical steps, required documents, and timeline to incorporate a company in the free zone?",
+      "Steps, required documents, and how long company setup usually takes.",
   },
   {
-    title: "Visas & staff quota",
-    description: "Employment visas and how many you get with your package.",
+    title: "Banking assistance",
+    description:
+      "Corporate bank account opening support and the documents you’ll need.",
     prompt:
-      "How many employment visas or staff quota can I get with my free zone package, and what are the options to add more?",
+      "Opening a corporate bank account and what documents are required.",
   },
   {
-    title: "Renewals & compliance",
-    description: "Annual fees, renewals, and ongoing obligations.",
+    title: "Relocation to UAE",
+    description:
+      "Relocation steps, residency visas, and what it’s like living in Ras Al Khaimah.",
     prompt:
-      "What are the annual renewal fees, license renewal process, and mandatory compliance obligations for a free zone company?",
+      "Moving to the UAE, residency visas, and living in Ras Al Khaimah.",
   },
 ] as const;
 

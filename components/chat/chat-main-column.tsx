@@ -1,7 +1,6 @@
 "use client";
 
 import type { ChatMessage } from "@/lib/chat-types";
-import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import type { RefObject } from "react";
 import { ChatComposer } from "./chat-composer";
@@ -40,25 +39,22 @@ export function ChatMainColumn({
 }: ChatMainColumnProps) {
   return (
     <div className="relative order-2 flex min-h-0 min-w-0 flex-1 flex-col bg-background">
-      <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2 md:px-3">
+      <header className="flex h-12 shrink-0 items-center gap-2 border-b px-2 md:px-3">
         <SidebarTrigger className="md:flex" />
-        <Separator orientation="vertical" className="h-6" />
-        <span className="text-sm font-medium text-muted-foreground">
-          Sales agent
-        </span>
       </header>
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-6 pt-4 md:px-8">
         <div
           className={cn(
             "mx-auto flex w-full max-w-3xl flex-col items-center gap-6 py-8 transition-opacity duration-200",
-            hasMessages && "pointer-events-none h-0 overflow-hidden py-0 opacity-0",
+            hasMessages &&
+              "pointer-events-none h-0 overflow-hidden py-0 opacity-0"
           )}
           aria-hidden={hasMessages}
         >
           <div
             className={cn(
               "size-24 rounded-full bg-linear-to-br from-primary/90 via-primary/40 to-accent/80",
-              "blur-0 shadow-[0_0_60px_-12px_var(--color-primary)]",
+              "blur-0 shadow-[0_0_60px_-12px_var(--color-primary)]"
             )}
             aria-hidden
           />
@@ -73,7 +69,7 @@ export function ChatMainColumn({
         <div
           className={cn(
             "mx-auto w-full max-w-3xl flex-1",
-            !hasMessages && "min-h-0",
+            !hasMessages && "min-h-0"
           )}
         >
           <ChatMessageList messages={messages} typing={typing} />

@@ -9,7 +9,8 @@ export type CognitoTokens = {
 };
 
 export function getCognitoConfig() {
-  const domain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN?.trim() || "";
+  const domain =
+    process.env.NEXT_PUBLIC_COGNITO_DOMAIN?.trim().replace(/^https?:\/\//, "") || "";
   const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID?.trim() || "";
   const redirectUri =
     process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI?.trim() ||

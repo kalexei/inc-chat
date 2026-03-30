@@ -7,7 +7,6 @@ import {
 import type { StoredSession } from "@/lib/chat-types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  SidebarInput,
   SidebarMenu,
   SidebarMenuAction,
   SidebarMenuButton,
@@ -22,8 +21,6 @@ type SessionListProps = {
   activeSessionId: string | null;
   userId: string;
   searchQuery: string;
-  showSearch: boolean;
-  onSearchChange: (value: string) => void;
   onSelect: (id: string) => void;
   onDelete: (id: string, e: React.MouseEvent) => void;
 };
@@ -34,8 +31,6 @@ export function SessionList({
   activeSessionId,
   userId,
   searchQuery,
-  showSearch,
-  onSearchChange,
   onSelect,
   onDelete,
 }: SessionListProps) {
@@ -47,18 +42,6 @@ export function SessionList({
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
-      {showSearch ? (
-        <div className="shrink-0 border-b border-border px-2 py-2">
-          <SidebarInput
-            type="search"
-            placeholder="Search chat history…"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            autoComplete="off"
-            className="bg-background/60 text-sm"
-          />
-        </div>
-      ) : null}
       <ScrollArea className="min-h-0 flex-1">
         <div className="p-2 pr-3">
           {sessions.length === 0 ? (

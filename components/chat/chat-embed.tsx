@@ -15,6 +15,7 @@ export function ChatEmbed() {
   const { textareaRef } = chat.refs;
   const [isOpen, setIsOpen] = useState(false);
   const [shouldRenderPanel, setShouldRenderPanel] = useState(false);
+  const [showGreeting, setShowGreeting] = useState(false);
   const embedId = "rak-inc-chat";
 
   const skipRestoreOnceRef = useRef(true);
@@ -61,7 +62,7 @@ export function ChatEmbed() {
   useEffect(() => {
     const t = window.setTimeout(
       () => setShouldRenderPanel(isOpen),
-      isOpen ? 0 : 260,
+      isOpen ? 0 : 260
     );
     return () => window.clearTimeout(t);
   }, [isOpen]);
@@ -74,6 +75,16 @@ export function ChatEmbed() {
       "*"
     );
   }, [isOpen]);
+
+  useEffect(() => {
+    // Show greeting bubble after a short delay, hide it after 5s.
+    const showT = window.setTimeout(() => setShowGreeting(true), 1200);
+    const hideT = window.setTimeout(() => setShowGreeting(false), 6000);
+    return () => {
+      window.clearTimeout(showT);
+      window.clearTimeout(hideT);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isOpen || !chat.hasMessages) return;
@@ -149,6 +160,22 @@ export function ChatEmbed() {
           </div>
         </section>
       ) : null}
+
+      <div
+        className={cn(
+          "fixed bottom-14 right-13 z-50 max-w-[200px]",
+          "rounded-2xl rounded-br-sm border border-border/70 bg-card px-3.5 py-2.5",
+          "text-sm font-medium text-foreground shadow-lg shadow-black/20",
+          "pointer-events-none origin-bottom-right",
+          "transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          showGreeting && !isOpen
+            ? "translate-y-0 scale-100 opacity-100"
+            : "translate-y-2 scale-95 opacity-0"
+        )}
+        aria-hidden
+      >
+        👋 Hi! Need help? Chat with us.
+      </div>
 
       <div className="fixed right-0 bottom-0 z-50">
         <Button

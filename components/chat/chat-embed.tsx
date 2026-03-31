@@ -9,7 +9,6 @@ import { useLayoutEffect, useRef, useState, useEffect } from "react";
 import { ChatComposer } from "./chat-composer";
 import { ChatMessageList } from "./chat-message-list";
 import { ChatQuickCards } from "./chat-quick-cards";
-
 export function ChatEmbed() {
   const chat = useSalesAgentChat();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -34,9 +33,13 @@ export function ChatEmbed() {
     document.documentElement.style.setProperty(
       "background-color",
       "transparent",
-      "important",
+      "important"
     );
-    document.body.style.setProperty("background-color", "transparent", "important");
+    document.body.style.setProperty(
+      "background-color",
+      "transparent",
+      "important"
+    );
     document.documentElement.style.backgroundImage = "none";
     document.body.style.backgroundImage = "none";
     return () => {
@@ -56,12 +59,10 @@ export function ChatEmbed() {
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      setShouldRenderPanel(true);
-      return;
-    }
-    // Allow the close animation to finish before removing the panel from the DOM.
-    const t = window.setTimeout(() => setShouldRenderPanel(false), 260);
+    const t = window.setTimeout(
+      () => setShouldRenderPanel(isOpen),
+      isOpen ? 0 : 260,
+    );
     return () => window.clearTimeout(t);
   }, [isOpen]);
 
@@ -70,14 +71,14 @@ export function ChatEmbed() {
     // so it can resize the iframe and avoid covering other UI.
     window.parent?.postMessage(
       { source: "rak-inc-chat", id: embedId, open: isOpen },
-      "*",
+      "*"
     );
   }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || !chat.hasMessages) return;
     const viewport = scrollAreaRef.current?.querySelector<HTMLDivElement>(
-      '[data-slot="scroll-area-viewport"]',
+      '[data-slot="scroll-area-viewport"]'
     );
     if (!viewport) return;
     viewport.scrollTop = viewport.scrollHeight;
@@ -96,21 +97,28 @@ export function ChatEmbed() {
             "origin-bottom-right transition-[opacity,transform,filter] duration-350 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
             isOpen
               ? "pointer-events-auto translate-y-0 scale-100 opacity-100 blur-0"
-              : "pointer-events-none translate-y-6 scale-[0.94] opacity-0 blur-[2px]",
+              : "pointer-events-none translate-y-6 scale-[0.94] opacity-0 blur-[2px]"
           )}
           aria-label="Embedded sales assistant chat"
         >
           <header className="flex items-center gap-3 border-b border-border/70 bg-background/85 px-4 py-3 backdrop-blur">
-            <div
+            {/* <div
               className={cn(
                 "size-8 rounded-full bg-linear-to-br from-primary to-accent",
                 "shadow-lg shadow-primary/25",
               )}
               aria-hidden
-            />
+            /> */}
+            {/* <Image
+              src="/assets/logo/logo.svg"
+              alt="RAK INC"
+              width={32}
+              height={32}
+              className="size-8 rounded-full bg-linear-to-br from-primary to-accent shadow-lg shadow-primary/25"
+            /> */}
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">
-                RAK INC Assistant
+                Innovation City Assistant
               </p>
               <p className="text-xs text-muted-foreground">Online</p>
             </div>
@@ -150,7 +158,7 @@ export function ChatEmbed() {
             "size-14 rounded-full shadow-none ring-0",
             "transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
             "active:scale-95",
-            isOpen ? "rotate-0" : "hover:-translate-y-0.5",
+            isOpen ? "rotate-0" : "hover:-translate-y-0.5"
           )}
           aria-label={isOpen ? "Close chat" : "Open chat"}
           onClick={() => setIsOpen((v) => !v)}
@@ -161,7 +169,7 @@ export function ChatEmbed() {
                 "size-5 transition-all duration-250",
                 isOpen
                   ? "absolute scale-50 rotate-45 opacity-0"
-                  : "scale-100 rotate-0 opacity-100",
+                  : "scale-100 rotate-0 opacity-100"
               )}
             />
             <X
@@ -169,7 +177,7 @@ export function ChatEmbed() {
                 "size-5 transition-all duration-250",
                 isOpen
                   ? "scale-100 rotate-0 opacity-100"
-                  : "absolute scale-50 -rotate-45 opacity-0",
+                  : "absolute scale-50 -rotate-45 opacity-0"
               )}
             />
           </span>

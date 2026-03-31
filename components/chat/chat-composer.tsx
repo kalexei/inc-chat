@@ -59,20 +59,7 @@ export function ChatComposer({
         <div className="mt-2 flex items-center justify-between gap-2 border-t border-border/60 pt-2">
           <div className="flex items-center gap-1">
             <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    title="Voice (coming soon)"
-                    disabled
-                    className="opacity-35"
-                  >
-                    <IconMic />
-                  </Button>
-                </span>
-              </TooltipTrigger>
+              <TooltipTrigger asChild></TooltipTrigger>
               <TooltipContent side="top">
                 Voice input (coming soon)
               </TooltipContent>

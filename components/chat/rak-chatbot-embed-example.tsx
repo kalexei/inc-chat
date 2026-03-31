@@ -33,7 +33,7 @@ export default function RakChatbotEmbedExample({
 
     const iframe = document.createElement("iframe");
     iframe.id = iframeId;
-    iframe.title = "RAK INC Chatbot";
+    iframe.title = "Innovation City Chatbot";
     iframe.src = src;
     iframe.loading = "lazy";
     iframe.allow = "clipboard-read; clipboard-write";

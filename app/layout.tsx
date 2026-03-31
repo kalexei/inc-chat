@@ -11,7 +11,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "RAK INC — Sales Agent",
+  title: "Innovation City — Sales Agent",
   description: "Sales agent chat",
 };
 

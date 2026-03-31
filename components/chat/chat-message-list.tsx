@@ -1,15 +1,91 @@
 "use client";
 
 import type { ChatMessage } from "@/lib/chat-types";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMemo } from "react";
 
 type ChatMessageListProps = {
   messages: ChatMessage[];
   typing: boolean;
 };
 
+function PixelPacmanAvatar() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-7 text-primary" aria-hidden>
+      {/* minimalist pixel Pac-Man silhouette */}
+      <rect x="4" y="2" width="2" height="2" fill="currentColor" />
+      <rect x="6" y="2" width="2" height="2" fill="currentColor" />
+      <rect x="8" y="2" width="2" height="2" fill="currentColor" />
+
+      <rect x="2" y="4" width="2" height="2" fill="currentColor" />
+      <rect x="4" y="4" width="2" height="2" fill="currentColor" />
+      <rect x="6" y="4" width="2" height="2" fill="currentColor" />
+      <rect x="8" y="4" width="2" height="2" fill="currentColor" />
+      <rect x="10" y="4" width="2" height="2" fill="currentColor" />
+
+      <rect x="2" y="6" width="2" height="2" fill="currentColor" />
+      <rect x="4" y="6" width="2" height="2" fill="currentColor" />
+
+      <rect x="2" y="8" width="2" height="2" fill="currentColor" />
+      <rect x="4" y="8" width="2" height="2" fill="currentColor" />
+
+      <rect x="2" y="10" width="2" height="2" fill="currentColor" />
+      <rect x="4" y="10" width="2" height="2" fill="currentColor" />
+      <rect x="6" y="10" width="2" height="2" fill="currentColor" />
+      <rect x="8" y="10" width="2" height="2" fill="currentColor" />
+      <rect x="10" y="10" width="2" height="2" fill="currentColor" />
+
+      <rect x="4" y="12" width="2" height="2" fill="currentColor" />
+      <rect x="6" y="12" width="2" height="2" fill="currentColor" />
+      <rect x="8" y="12" width="2" height="2" fill="currentColor" />
+    </svg>
+  );
+}
+
+function RoleAvatar({
+  role,
+  userSeed,
+}: {
+  role: "user" | "assistant";
+  userSeed: string;
+}) {
+  const isUser = role === "user";
+  const src = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${userSeed}&backgroundType=gradientLinear`;
+
+  return (
+    <Avatar
+      size={isUser ? "sm" : "default"}
+      className={cn(
+        "mt-0.5 shrink-0",
+        isUser ? "ring-2 ring-primary/25" : "ring-1 ring-primary/20",
+      )}
+    >
+      {isUser ? (
+        <AvatarImage src={src} alt="Visitor avatar" />
+      ) : null}
+      <AvatarFallback
+        className={cn(
+          "text-xs font-semibold",
+          isUser
+            ? "bg-primary text-primary-foreground"
+            : "bg-primary/15 text-primary",
+        )}
+      >
+        {isUser ? <UserRound className="size-3.5" /> : <PixelPacmanAvatar />}
+      </AvatarFallback>
+    </Avatar>
+  );
+}
+
 export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
+  // Randomized per page load so each embed visit gets a fresh pixel avatar.
+  const userAvatarSeed = useMemo(
+    () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+    [],
+  );
+
   return (
     <div className="space-y-4 pb-2">
       {messages.map((m, i) => (
@@ -20,24 +96,7 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
             m.role === "user" && "flex-row-reverse",
           )}
         >
-          <Avatar
-            size="sm"
-            className={cn(
-              "mt-0.5 shrink-0",
-              m.role === "user" && "ring-2 ring-primary/25",
-            )}
-          >
-            <AvatarFallback
-              className={cn(
-                "text-xs font-semibold",
-                m.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground",
-              )}
-            >
-              {m.role === "user" ? "You" : "AI"}
-            </AvatarFallback>
-          </Avatar>
+          <RoleAvatar role={m.role} userSeed={userAvatarSeed} />
           <div
             className={cn(
               "flex min-w-0 max-w-[min(100%,42rem)] flex-col gap-1",
@@ -49,7 +108,7 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
                 "text-xs font-medium uppercase tracking-wide text-muted-foreground",
               )}
             >
-              {m.role === "user" ? "You" : "Sales Agent"}
+              {m.role === "user" ? "Visitor" : "Sales Agent"}
             </div>
             <div
               className={cn(
@@ -66,11 +125,7 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
       ))}
       {typing ? (
         <div className="flex gap-3">
-          <Avatar size="sm" className="mt-0.5 shrink-0">
-            <AvatarFallback className="bg-muted text-xs font-semibold text-muted-foreground">
-              AI
-            </AvatarFallback>
-          </Avatar>
+          <RoleAvatar role="assistant" userSeed={userAvatarSeed} />
           <div className="flex min-w-0 flex-col gap-1">
             <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Sales Agent

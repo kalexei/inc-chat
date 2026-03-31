@@ -112,7 +112,7 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
             </div>
             <div
               className={cn(
-                "rounded-2xl px-4 py-3 text-[15px] leading-relaxed",
+                "rounded-2xl px-3.5 py-2.5 text-[14px] leading-6",
                 m.role === "user"
                   ? "rounded-br-md bg-primary text-primary-foreground"
                   : "rounded-bl-md border border-border/80 bg-muted/50 text-foreground",
@@ -130,7 +130,7 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
             <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Sales Agent
             </div>
-            <div className="max-w-[min(100%,42rem)] rounded-2xl rounded-bl-md border border-dashed border-border/80 bg-muted/30 px-4 py-3 text-[15px] text-muted-foreground">
+            <div className="max-w-[min(100%,42rem)] rounded-2xl rounded-bl-md border border-dashed border-border/80 bg-muted/30 px-3.5 py-2.5 text-[14px] leading-6 text-muted-foreground">
               Agent is thinking…
             </div>
           </div>

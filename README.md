@@ -1,5 +1,11 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Chatbot Embedding
+
+For production-ready embedding across plain HTML, React, and Next.js (including Cloudflare CDN hosting), see:
+
+- `docs/chatbot-embedding.md`
+
 ## Getting Started
 
 First, run the development server:

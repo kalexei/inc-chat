@@ -39,13 +39,7 @@
 
     const existing = document.getElementById(config.iframeId);
     if (existing) {
-      return {
-        open: function () {},
-        close: function () {},
-        destroy: function () {
-          existing.remove();
-        },
-      };
+      existing.remove();
     }
 
     const iframe = document.createElement("iframe");

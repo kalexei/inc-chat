@@ -29,6 +29,9 @@ import {
   useState,
 } from "react";
 
+const DEFAULT_ASSISTANT_GREETING =
+  "Hi there 👋\nYou are now speaking with Innovi. How can I help?";
+
 export function useSalesAgentChat() {
   const apiBase = getApiBase();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -226,9 +229,7 @@ export function useSalesAgentChat() {
       setSessionAndStore(sid, "", true);
       setInputEnabled(true);
       log(`Session created: ${sid}`, "log-success");
-      if (cachedGreeting) {
-        setMessages([{ role: "assistant", content: cachedGreeting }]);
-      }
+      setMessages([{ role: "assistant", content: DEFAULT_ASSISTANT_GREETING }]);
       setIsSending(false);
       return true;
     } catch (e) {
@@ -429,7 +430,10 @@ export function useSalesAgentChat() {
     }
 
     setIsSending(false);
-    input.focus();
+    // Ensure focus is restored after state updates/rerender.
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
   }, [
     isSending,
     apiBase,
@@ -439,6 +443,7 @@ export function useSalesAgentChat() {
     updateRaw,
     updateSlotsFromResponse,
     autoResize,
+    textareaRef,
   ]);
 
   const sendSuggestedPrompt = useCallback(

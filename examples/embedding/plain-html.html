@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RAK Chat Widget - Plain HTML Example</title>
+  </head>
+  <body>
+    <h1>Plain HTML Host Page</h1>
+    <p>The chat widget should appear in the bottom-right corner.</p>
+
+    <script src="https://chat.example.com/chat-widget/v1/widget.js" defer></script>
+    <script>
+      window.addEventListener("DOMContentLoaded", function () {
+        window.RakChatWidget.init({
+          src: "https://chat.example.com/embed",
+          messageId: "rak-inc-chat",
+          closedSize: 64,
+          openWidth: 420,
+          openHeight: 820,
+          right: 12,
+          bottom: 12,
+          allowedOrigins: ["https://chat.example.com"],
+        });
+      });
+    </script>
+  </body>
+</html>
+

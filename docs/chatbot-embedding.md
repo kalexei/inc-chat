@@ -88,6 +88,13 @@ After upload, open the script URL in browser and confirm it returns JS content:
 
 ## Step 4 - Embed in Any Website
 
+Canonical example files (kept in this repo):
+
+- `examples/embedding/plain-html.html`
+- `examples/embedding/react-chat-widget.tsx`
+- `examples/embedding/next-app-router-chat-widget.tsx`
+- `examples/embedding/next-pages-router-chat-widget.tsx`
+
 ### Plain HTML
 
 ```html
@@ -183,6 +190,9 @@ export default function ChatWidget() {
 - **Widget does not appear**:
   - Check browser console for blocked script/CSP errors.
   - Verify `widget.js` URL is reachable.
+- **Widget stays button-sized after click**:
+  - Ensure `messageId` in `init({...})` is `rak-inc-chat` (or matches the value used by `/embed`).
+  - Ensure `allowedOrigins` includes the embed app origin exactly (scheme + host + port).
 - **Chat opens but cannot send messages**:
   - Verify backend API origin and CORS/session configuration.
 - **Resizing does not work**:

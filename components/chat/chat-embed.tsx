@@ -4,18 +4,18 @@ import { useSalesAgentChat } from "@/hooks/use-sales-agent-chat";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, X } from "lucide-react";
+import { ChevronDown, MessageCircle, X } from "lucide-react";
 import { useLayoutEffect, useRef, useState, useEffect } from "react";
 import { ChatComposer } from "./chat-composer";
 import { ChatMessageList } from "./chat-message-list";
-import { ChatQuickCards } from "./chat-quick-cards";
 export function ChatEmbed() {
   const chat = useSalesAgentChat();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const nearBottomRef = useRef(true);
   const { textareaRef } = chat.refs;
   const [isOpen, setIsOpen] = useState(false);
   const [shouldRenderPanel, setShouldRenderPanel] = useState(false);
-  const [showGreeting, setShowGreeting] = useState(false);
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const embedId = "rak-inc-chat";
 
   const skipRestoreOnceRef = useRef(true);
@@ -77,23 +77,49 @@ export function ChatEmbed() {
   }, [isOpen]);
 
   useEffect(() => {
-    // Show greeting bubble after a short delay, hide it after 5s.
-    const showT = window.setTimeout(() => setShowGreeting(true), 1200);
-    const hideT = window.setTimeout(() => setShowGreeting(false), 6000);
-    return () => {
-      window.clearTimeout(showT);
-      window.clearTimeout(hideT);
-    };
-  }, []);
-
-  useEffect(() => {
     if (!isOpen || !chat.hasMessages) return;
     const viewport = scrollAreaRef.current?.querySelector<HTMLDivElement>(
       '[data-slot="scroll-area-viewport"]'
     );
     if (!viewport) return;
+    if (!nearBottomRef.current) return;
     viewport.scrollTop = viewport.scrollHeight;
   }, [isOpen, chat.hasMessages, chat.messages, chat.typing]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      nearBottomRef.current = true;
+      return;
+    }
+
+    const viewport = scrollAreaRef.current?.querySelector<HTMLDivElement>(
+      '[data-slot="scroll-area-viewport"]'
+    );
+    if (!viewport) return;
+
+    const updatePositionState = () => {
+      const threshold = 90;
+      const distanceToBottom =
+        viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+      const isNearBottom = distanceToBottom <= threshold;
+      nearBottomRef.current = isNearBottom;
+      setShowJumpToLatest(!isNearBottom);
+    };
+
+    updatePositionState();
+    viewport.addEventListener("scroll", updatePositionState, { passive: true });
+    return () => viewport.removeEventListener("scroll", updatePositionState);
+  }, [isOpen, shouldRenderPanel, chat.hasMessages]);
+
+  function scrollToLatest() {
+    const viewport = scrollAreaRef.current?.querySelector<HTMLDivElement>(
+      '[data-slot="scroll-area-viewport"]'
+    );
+    if (!viewport) return;
+    viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+    nearBottomRef.current = true;
+    setShowJumpToLatest(false);
+  }
 
   return (
     <>
@@ -103,9 +129,10 @@ export function ChatEmbed() {
       {shouldRenderPanel ? (
         <section
           className={cn(
-            "fixed right-0 bottom-16 z-50 flex min-w-0 max-w-md flex-col overflow-hidden border border-border/70 bg-card/95",
-            "h-[min(42rem,calc(100dvh-4rem))] w-[min(24rem,100vw)] rounded-2xl",
+            "fixed right-0 bottom-14 z-50 flex min-w-0 flex-col overflow-hidden border border-border/70 bg-card/95",
+            "h-[min(48rem,calc(100dvh-4rem))] w-[min(26.25rem,calc(100vw-0.75rem))] max-w-[calc(100vw-0.75rem)] rounded-2xl",
             "origin-bottom-right transition-[opacity,transform,filter] duration-350 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
+            "relative",
             isOpen
               ? "pointer-events-auto translate-y-0 scale-100 opacity-100 blur-0"
               : "pointer-events-none translate-y-6 scale-[0.94] opacity-0 blur-[2px]"
@@ -113,42 +140,38 @@ export function ChatEmbed() {
           aria-label="Embedded sales assistant chat"
         >
           <header className="flex items-center gap-3 border-b border-border/70 bg-background/85 px-4 py-3 backdrop-blur">
-            {/* <div
-              className={cn(
-                "size-8 rounded-full bg-linear-to-br from-primary to-accent",
-                "shadow-lg shadow-primary/25",
-              )}
-              aria-hidden
-            /> */}
-            {/* <Image
-              src="/assets/logo/logo.svg"
-              alt="RAK INC"
-              width={32}
-              height={32}
-              className="size-8 rounded-full bg-linear-to-br from-primary to-accent shadow-lg shadow-primary/25"
-            /> */}
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">
-                Innovation City Assistant
+                Innovi
               </p>
-              <p className="text-xs text-muted-foreground">Online</p>
+              <p className="text-xs text-muted-foreground">
+                If it exists in Innovation City, I know about it.
+              </p>
             </div>
           </header>
 
           <ScrollArea ref={scrollAreaRef} className="min-h-0 flex-1 px-4 py-4">
-            {!chat.hasMessages ? (
-              <div className="mb-4 rounded-xl border border-dashed border-border/70 bg-muted/25 px-3 py-2 text-sm text-muted-foreground">
-                {chat.heroLine}
-              </div>
-            ) : null}
             <ChatMessageList messages={chat.messages} typing={chat.typing} />
           </ScrollArea>
 
+          <button
+            type="button"
+            onClick={scrollToLatest}
+            aria-label="Jump to latest message"
+            className={cn(
+              "absolute left-1/2 z-20 -translate-x-1/2 rounded-full border border-border/70",
+              "bg-background/95 p-2 text-muted-foreground shadow-lg shadow-black/35 backdrop-blur",
+              "transition-all duration-250 ease-out",
+              "bottom-24",
+              showJumpToLatest
+                ? "pointer-events-auto translate-y-0 opacity-100"
+                : "pointer-events-none translate-y-2 opacity-0"
+            )}
+          >
+            <ChevronDown className="size-4" />
+          </button>
+
           <div className="shrink-0 space-y-3 border-t border-border/70 bg-background/75 p-3 backdrop-blur">
-            <ChatQuickCards
-              visible={!chat.hasMessages}
-              onPickSuggestion={(p) => void chat.sendSuggestedPrompt(p)}
-            />
             <ChatComposer
               textareaRef={textareaRef}
               inputEnabled={chat.inputEnabled}
@@ -160,22 +183,6 @@ export function ChatEmbed() {
           </div>
         </section>
       ) : null}
-
-      <div
-        className={cn(
-          "fixed bottom-14 right-13 z-50 max-w-[200px]",
-          "rounded-2xl rounded-br-sm border border-border/70 bg-card px-3.5 py-2.5",
-          "text-sm font-medium text-foreground shadow-lg shadow-black/20",
-          "pointer-events-none origin-bottom-right",
-          "transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          showGreeting && !isOpen
-            ? "translate-y-0 scale-100 opacity-100"
-            : "translate-y-2 scale-95 opacity-0"
-        )}
-        aria-hidden
-      >
-        👋 Hi! Need help? Chat with us.
-      </div>
 
       <div className="fixed right-0 bottom-0 z-50">
         <Button

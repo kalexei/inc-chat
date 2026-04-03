@@ -22,7 +22,7 @@ export default function RakChatbotEmbedExample({
   messageId = "rak-inc-chat",
   closedSize = 64,
   openWidth = 420,
-  openHeight = 820,
+  openHeight = 824,
   right = 12,
   bottom = 12,
   radius = 16,

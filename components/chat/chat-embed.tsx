@@ -132,7 +132,6 @@ export function ChatEmbed() {
             "fixed right-0 bottom-14 z-50 flex min-w-0 flex-col overflow-hidden border border-border/70 bg-card/95",
             "h-[min(48rem,calc(100dvh-4rem))] w-[min(26.25rem,calc(100vw-0.75rem))] max-w-[calc(100vw-0.75rem)] rounded-2xl",
             "origin-bottom-right transition-[opacity,transform,filter] duration-350 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
-            "relative",
             isOpen
               ? "pointer-events-auto translate-y-0 scale-100 opacity-100 blur-0"
               : "pointer-events-none translate-y-6 scale-[0.94] opacity-0 blur-[2px]"

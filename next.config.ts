@@ -6,10 +6,13 @@ import type { NextConfig } from "next";
  * Next proxies `/api/...` → backend. Leave unset if you use
  * `NEXT_PUBLIC_API_BASE_URL` to call the API directly instead.
  */
-const salesAgentOrigin = process.env.SALES_AGENT_API_ORIGIN?.replace(/\/$/, "");
-
 const nextConfig: NextConfig = {
   async rewrites() {
+    const salesAgentOrigin = (
+      process.env.SALES_AGENT_API_ORIGIN ||
+      process.env.NEXT_PUBLIC_API_BASE_URL ||
+      ""
+    ).replace(/\/$/, "");
     if (!salesAgentOrigin) return [];
     return [
       {

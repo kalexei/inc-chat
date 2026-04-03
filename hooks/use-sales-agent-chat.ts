@@ -250,8 +250,8 @@ export function useSalesAgentChat() {
   ]);
 
   const loadSession = useCallback(
-    async (id: string) => {
-      if (isSending) return;
+    async (id: string): Promise<boolean> => {
+      if (isSending) return false;
       log(`Loading session ${id}…`, "log-info");
       try {
         const res = await fetch(`${apiBase}/api/session/${id}`, {
@@ -259,7 +259,7 @@ export function useSalesAgentChat() {
         });
         if (!res.ok) {
           log(`Session not found: ${id}`, "log-error");
-          return;
+          return false;
         }
         const data = (await res.json()) as SessionApiResponse;
         setMessages([]);
@@ -286,8 +286,10 @@ export function useSalesAgentChat() {
         );
         setInputEnabled(true);
         log(`Session loaded: ${msgs.length} messages`, "log-success");
+        return true;
       } catch (e) {
         log(`Failed to load session: ${(e as Error).message}`, "log-error");
+        return false;
       }
     },
     [apiBase, authHeaders, isSending, log, updateRaw, updateSlotsFromResponse],
@@ -304,7 +306,10 @@ export function useSalesAgentChat() {
       await Promise.resolve();
       const sessions = loadStoredSessions();
       if (sessions.length > 0) {
-        await loadSession(sessions[0]!.id);
+        const ok = await loadSession(sessions[0]!.id);
+        if (!ok) {
+          void newSession();
+        }
       } else {
         void newSession();
       }

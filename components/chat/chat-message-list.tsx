@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
+import { useState, useEffect } from "react";
 
 type ChatMessageListProps = {
   messages: ChatMessage[];
@@ -41,49 +42,97 @@ const assistantComponents: Components = {
   td: ({ children }) => <td className="px-3 py-1.5">{children}</td>,
 };
 
+function timeAgo(ts: number, now: number): string {
+  const diff = Math.floor((now - ts) / 1000);
+  if (diff < 10) return "just now";
+  if (diff < 60) return `${diff}s ago`;
+  const mins = Math.floor(diff / 60);
+  if (mins < 60) return `${mins} min${mins === 1 ? "" : "s"} ago`;
+  const hrs = Math.floor(diff / 3600);
+  if (hrs < 24) return `${hrs} hr${hrs === 1 ? "" : "s"} ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
 export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
+  // Indices whose timestamp is currently visible.
+  // Initialise with the last message so it shows by default.
+  const [shown, setShown] = useState<Set<number>>(
+    () => new Set(messages.length > 0 ? [messages.length - 1] : [])
+  );
+
+  // Tick every 30 s so "just now" → "1 min ago" stays accurate.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Always show the timestamp for the newest message automatically.
+  useEffect(() => {
+    if (messages.length === 0) return;
+    setShown((prev) => new Set([...prev, messages.length - 1]));
+  }, [messages.length]);
+
+  const toggle = (i: number) => {
+    setShown((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  };
+
   return (
     <div className="space-y-4 pb-2">
       {messages.map((m, i) => (
         <div
           key={`${i}-${m.role}-${m.content.slice(0, 24)}`}
-          className={cn("flex", m.role === "user" && "justify-end")}
+          data-chat-role={m.role}
+          className={cn("flex flex-col", m.role === "user" && "items-end")}
         >
-          <div
-            className={cn(
-              "flex min-w-0 max-w-[min(100%,42rem)] flex-col gap-1.5",
-              m.role === "user" && "items-end"
+          <div className={cn("flex min-w-0 max-w-[min(100%,42rem)] flex-col gap-1.5", m.role === "user" && "items-end")}>
+            {m.role === "assistant" && (
+              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Innovi
+              </div>
             )}
-          >
-            <div
+
+            {/* Message bubble — click to toggle timestamp */}
+            <button
+              type="button"
+              onClick={() => m.sentAt && toggle(i)}
               className={cn(
-                "text-xs font-medium uppercase tracking-wide text-muted-foreground"
-              )}
-            >
-              {m.role === "user" ? "You" : "Innovi"}
-            </div>
-            <div
-              className={cn(
-                "rounded-2xl border px-3.5 py-2.5 text-[14px] leading-6",
+                "rounded-2xl border px-3.5 py-2.5 text-[14px] leading-6 text-left",
                 m.role === "user"
                   ? "rounded-br-md border-white bg-white text-black"
-                  : "rounded-bl-md border-[#3a3a3a] bg-[#252525] text-white"
+                  : "rounded-bl-md border-[#3a3a3a] bg-[#252525] text-white",
+                m.sentAt ? "cursor-pointer" : "cursor-default",
               )}
             >
               {m.role === "assistant" ? (
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={assistantComponents}
-                >
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={assistantComponents}>
                   {m.content}
                 </ReactMarkdown>
               ) : (
                 m.content
               )}
+            </button>
+
+            {/* Timestamp — slides in/out */}
+            <div
+              className={cn(
+                "overflow-hidden text-[11px] text-muted-foreground/70 transition-[max-height,opacity] duration-200 ease-in-out",
+                shown.has(i) && m.sentAt
+                  ? "max-h-5 opacity-100"
+                  : "max-h-0 opacity-0",
+              )}
+            >
+              {m.sentAt ? timeAgo(m.sentAt, now) : null}
             </div>
           </div>
         </div>
       ))}
+
       {typing ? (
         <div className="flex">
           <div className="flex min-w-0 flex-col gap-1">

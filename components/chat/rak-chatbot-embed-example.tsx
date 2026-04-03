@@ -71,21 +71,52 @@ export default function RakChatbotEmbedExample({
     let pendingH: number | null = null;
     let closeTimer: number | null = null;
     let isOpen = false;
+    let isFullscreen = false;
+
+    const applyFullscreen = () => {
+      isFullscreen = true;
+      Object.assign(iframe.style, {
+        top: "0", left: "0", right: "0", bottom: "0",
+        width: "100%", height: "100%",
+        borderRadius: "0",
+      });
+    };
 
     const applySize = (w: number, h: number) => {
+      isFullscreen = false;
       const { w: cw, h: ch } = clampSize(w, h);
       lastW = cw;
       lastH = ch;
-      iframe.style.width = `${cw}px`;
+      iframe.style.top    = "auto";
+      iframe.style.left   = "auto";
+      iframe.style.right  = `${right}px`;
+      iframe.style.bottom = `${bottom}px`;
+      iframe.style.width  = `${cw}px`;
       iframe.style.height = `${ch}px`;
     };
 
     const handleMessage = (event: MessageEvent) => {
       const data = event.data as
-        | { source?: string; id?: string; open?: boolean; width?: number; height?: number }
+        | { source?: string; id?: string; open?: boolean; fullscreen?: boolean; width?: number; height?: number }
         | undefined;
+
+      // Child signals readiness — re-send constraints so it gets availWidth
+      // even if our "load" callback fired before React registered its listener.
+      if (data?.source === "rak-inc-chat-ready" && data.id === messageId) {
+        sendAvailHeight();
+        return;
+      }
+
       if (!data || data.source !== "rak-inc-chat" || data.id !== messageId) return;
       if (typeof data.open !== "boolean") return;
+
+      // Fullscreen mode (mobile open): expand iframe to cover the whole viewport.
+      if (data.fullscreen === true) {
+        if (closeTimer) { window.clearTimeout(closeTimer); closeTimer = null; pendingW = null; pendingH = null; }
+        isOpen = true;
+        applyFullscreen();
+        return;
+      }
 
       // Dimensions are required; old-format messages without them are ignored.
       if (typeof data.width !== "number" || typeof data.height !== "number") return;
@@ -97,7 +128,7 @@ export default function RakChatbotEmbedExample({
         // Opening: cancel any pending close and expand immediately.
         if (closeTimer) { window.clearTimeout(closeTimer); closeTimer = null; pendingW = null; pendingH = null; }
         applySize(data.width, data.height);
-      } else if (wasOpen) {
+      } else if (wasOpen || isFullscreen) {
         // Transitioning from open → closed: wait for the close animation,
         // but keep updating pending dims so we apply the freshest value.
         pendingW = data.width;
@@ -125,6 +156,10 @@ export default function RakChatbotEmbedExample({
     };
 
     const handleResize = () => {
+      if (isFullscreen) {
+        sendAvailHeight();
+        return;
+      }
       const w = pendingW !== null ? pendingW : lastW;
       const h = pendingH !== null ? pendingH : lastH;
       applySize(w, h);
@@ -132,9 +167,10 @@ export default function RakChatbotEmbedExample({
 
     const sendAvailHeight = () => {
       if (!iframe.contentWindow) return;
-      const avail = window.innerHeight - bottom - 32; // 32px top safety margin
+      const availHeight = window.innerHeight - bottom - 32; // 32px top margin
+      const availWidth  = window.innerWidth  - right  - 8;  // 8px left margin
       iframe.contentWindow.postMessage(
-        { source: "rak-inc-chat-host", availHeight: avail },
+        { source: "rak-inc-chat-host", availHeight, availWidth },
         "*"
       );
     };

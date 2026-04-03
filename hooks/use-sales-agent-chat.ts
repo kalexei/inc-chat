@@ -229,7 +229,7 @@ export function useSalesAgentChat() {
       setSessionAndStore(sid, "", true);
       setInputEnabled(true);
       log(`Session created: ${sid}`, "log-success");
-      setMessages([{ role: "assistant", content: DEFAULT_ASSISTANT_GREETING }]);
+      setMessages([{ role: "assistant", content: DEFAULT_ASSISTANT_GREETING, sentAt: Date.now() }]);
       setIsSending(false);
       return true;
     } catch (e) {
@@ -360,7 +360,7 @@ export function useSalesAgentChat() {
     setIsSending(true);
     input.value = "";
     autoResize();
-    setMessages((m) => [...m, { role: "user", content: message }]);
+    setMessages((m) => [...m, { role: "user", content: message, sentAt: Date.now() }]);
     setTyping(true);
 
     const body: { message: string; sessionId?: string } = { message };
@@ -388,6 +388,7 @@ export function useSalesAgentChat() {
             role: "assistant",
             content:
               "⚠ Hourly token limit reached. Please wait before sending more messages.",
+            sentAt: Date.now(),
           },
         ]);
       } else if (!res.ok) {
@@ -400,6 +401,7 @@ export function useSalesAgentChat() {
           {
             role: "assistant",
             content: `⚠ Error: ${data.error || "Unknown error"}`,
+            sentAt: Date.now(),
           },
         ]);
       } else {
@@ -407,7 +409,7 @@ export function useSalesAgentChat() {
         setSessionAndStore(data.sessionId, message, isNewSession);
         setMessages((m) => [
           ...m,
-          { role: "assistant", content: data.reply || "(empty response)" },
+          { role: "assistant", content: data.reply || "(empty response)", sentAt: Date.now() },
         ]);
         updateSlotsFromResponse(
           (data.slots || {}) as Record<string, unknown>,

@@ -43,10 +43,10 @@ export function ChatComposer({
                 ? "Type a message…"
                 : "Start or load a session to chat…"
             }
-          disabled={!inputEnabled}
+            disabled={!inputEnabled}
             className={cn(
               "min-h-[64px] resize-none rounded-xl border border-border/80 bg-background/60 px-3 py-2 pr-12 text-[14px] leading-5 shadow-none",
-              "focus-visible:ring-0"
+              "focus-visible:ring-0",
             )}
             onInput={onAutoResize}
             onKeyDown={(e) => {
@@ -62,7 +62,7 @@ export function ChatComposer({
                 type="button"
                 size="icon"
                 disabled={isSending || !inputEnabled}
-                className="absolute right-2 bottom-2 size-8 rounded-full"
+                className="absolute right-2 bottom-2 size-8 rounded-full hover:bg-white"
                 onClick={() => onSend()}
               >
                 <SendIcon className="size-4" />
@@ -72,8 +72,8 @@ export function ChatComposer({
               {isSending
                 ? "Sending…"
                 : !inputEnabled
-                ? "Create or open a session first"
-                : "Send message (Enter)"}
+                  ? "Create or open a session first"
+                  : "Send message (Enter)"}
             </TooltipContent>
           </Tooltip>
         </div>

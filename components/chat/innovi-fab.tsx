@@ -111,6 +111,7 @@ export function InnoviFab({
             aria-hidden="true"
             fill
             sizes="64px"
+            loading="eager"
             className={cn(
               "object-contain transition-opacity duration-500 ease-in-out",
               state === s

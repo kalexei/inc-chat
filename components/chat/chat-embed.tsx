@@ -17,9 +17,14 @@ export function ChatEmbed() {
   const [isOpen, setIsOpen] = useState(false);
   const [shouldRenderPanel, setShouldRenderPanel] = useState(false);
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
-  // Height the host page tells us is available (viewport - bottom offset).
-  // Null = no parent frame (direct /embed visit) → use generous default.
+  // Space the host page tells us is available (viewport - offsets).
+  // Null = no parent frame (direct /embed visit) → use generous defaults.
   const [availHeight, setAvailHeight] = useState<number | null>(null);
+  const [availWidth, setAvailWidth] = useState<number | null>(null);
+
+  // Mobile = host page is narrow enough that the panel should go full-screen.
+  const isMobile = availWidth !== null && availWidth < 500;
+
   const embedId = "rak-inc-chat";
 
   // ─── Single wrapper ref — ResizeObserver watches this for auto iframe sizing ──
@@ -158,18 +163,28 @@ export function ChatEmbed() {
     };
   }, []);
 
-  // Listen for the host page telling us how much vertical space is available.
+  // Listen for the host page telling us how much space is available.
   // The parent sends this after the iframe loads and on every window resize.
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      const data = e.data as { source?: string; availHeight?: number } | undefined;
-      if (data?.source === "rak-inc-chat-host" && typeof data.availHeight === "number") {
-        setAvailHeight(data.availHeight);
-      }
+      const data = e.data as
+        | { source?: string; availHeight?: number; availWidth?: number }
+        | undefined;
+      if (data?.source !== "rak-inc-chat-host") return;
+      if (typeof data.availHeight === "number") setAvailHeight(data.availHeight);
+      if (typeof data.availWidth === "number") setAvailWidth(data.availWidth);
     };
     window.addEventListener("message", handler);
+
+    // Signal readiness to the parent so it re-sends constraints even if the
+    // iframe "load" event fired before our message listener was registered.
+    window.parent?.postMessage(
+      { source: "rak-inc-chat-ready", id: embedId },
+      "*",
+    );
+
     return () => window.removeEventListener("message", handler);
-  }, []);
+  }, [embedId]);
 
   useEffect(() => {
     const t = window.setTimeout(
@@ -179,11 +194,17 @@ export function ChatEmbed() {
     return () => window.clearTimeout(t);
   }, [isOpen]);
 
+  // Track fullscreen intent in a ref so the ResizeObserver always uses the latest value.
+  const isFullscreenRef = useRef(false);
+
   // ─── Auto iframe sizing via ResizeObserver ────────────────────────────────────
   // The wrapper is a single fixed container holding both the chat panel and FAB.
   // When the wrapper's rendered size changes (panel open/close, bubble in/out),
   // we postMessage the exact pixel dimensions to the parent frame, which applies
   // them directly — no hardcoded closedSize / openWidth / openHeight needed.
+  //
+  // On mobile (narrow host viewport) we also send fullscreen:true so the parent
+  // can expand the iframe to 100vw×100vh instead of relying on measured dims.
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
@@ -197,6 +218,7 @@ export function ChatEmbed() {
           id: embedId,
           open: isOpenRef.current,
           hasBubble: hasBubbleRef.current,
+          fullscreen: isFullscreenRef.current,
           width: Math.ceil(width),
           height: Math.ceil(height),
         },
@@ -213,6 +235,8 @@ export function ChatEmbed() {
   useEffect(() => {
     const hasBubble = !isOpen && !bubbleDismissed && Boolean(bubbleText);
     hasBubbleRef.current = hasBubble;
+    const fullscreen = isMobile && isOpen;
+    isFullscreenRef.current = fullscreen;
 
     const el = wrapperRef.current;
     const rect = el?.getBoundingClientRect();
@@ -222,21 +246,56 @@ export function ChatEmbed() {
         id: embedId,
         open: isOpen,
         hasBubble,
+        fullscreen,
         ...(rect && rect.width > 0
           ? { width: Math.ceil(rect.width), height: Math.ceil(rect.height) }
           : {}),
       },
       "*",
     );
-  }, [isOpen, bubbleText, bubbleDismissed, embedId]);
+  }, [isOpen, isMobile, bubbleText, bubbleDismissed, embedId]);
 
   // ─── Scroll helpers ───────────────────────────────────────────────────────────
+  const scrollTypingRef = useRef(false);
+
+  // Scroll to bottom while user is waiting (typing indicator visible) so they
+  // always see the "thinking…" indicator. When the response finishes, scroll
+  // to the TOP of the new assistant message instead so reading starts naturally.
   useEffect(() => {
     if (!isOpen || !chat.hasMessages) return;
     const viewport = scrollAreaRef.current?.querySelector<HTMLDivElement>(
       '[data-slot="scroll-area-viewport"]',
     );
     if (!viewport) return;
+
+    const wasTyping = scrollTypingRef.current;
+    scrollTypingRef.current = chat.typing;
+
+    // Response just completed → scroll to top of last assistant message.
+    if (wasTyping && !chat.typing) {
+      const lastMsg = chat.messages[chat.messages.length - 1];
+      if (lastMsg?.role === "assistant") {
+        // rAF ensures this runs after React has painted the final message.
+        requestAnimationFrame(() => {
+          const els = viewport.querySelectorAll<HTMLElement>(
+            '[data-chat-role="assistant"]',
+          );
+          const last = els[els.length - 1];
+          if (!last) return;
+          const relTop =
+            last.getBoundingClientRect().top -
+            viewport.getBoundingClientRect().top +
+            viewport.scrollTop;
+          viewport.scrollTo({
+            top: Math.max(0, relTop - 8),
+            behavior: "smooth",
+          });
+        });
+        return;
+      }
+    }
+
+    // Default: keep bottom in view while typing / on new user messages.
     if (!nearBottomRef.current) return;
     viewport.scrollTop = viewport.scrollHeight;
   }, [isOpen, chat.hasMessages, chat.messages, chat.typing]);
@@ -295,37 +354,61 @@ export function ChatEmbed() {
        */}
       <div
         ref={wrapperRef}
-        className="fixed bottom-0 right-0 z-50 flex flex-col items-end gap-3 p-6"
+        className={cn(
+          "fixed z-50 flex flex-col",
+          // Mobile + open: full-screen overlay; otherwise bottom-right corner widget
+          isMobile && isOpen
+            ? "inset-0 items-stretch"
+            : "bottom-0 right-0 items-end gap-3 py-6 px-3",
+        )}
       >
         {/* Chat panel — rendered while open (and for 260ms during close animation) */}
         {shouldRenderPanel ? (
-          /* overflow-visible so the X badge can sit half outside the panel corner */
+          /*
+           * overflow-visible so the X badge (desktop) can sit half outside the corner.
+           * On mobile it's also a flex container (flex-col) so that the inner section
+           * can use flex-1 / min-h-0 and actually constrain the ScrollArea height.
+           */
           <div
             className={cn(
               "relative overflow-visible",
-              "origin-bottom-right transition-[opacity,transform,filter] duration-350 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
+              isMobile
+                ? "flex-1 min-h-0 flex flex-col origin-bottom transition-[opacity,transform,filter] duration-350 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
+                : "origin-bottom-right transition-[opacity,transform,filter] duration-350 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
               isOpen
                 ? "pointer-events-auto translate-y-0 scale-100 opacity-100 blur-0"
                 : "pointer-events-none translate-y-6 scale-[0.94] opacity-0 blur-[2px]",
             )}
           >
-            {/* X badge — half outside the top-right corner */}
+            {/* X badge — half outside the top-right corner (desktop) or inside top-right (mobile) */}
             <button
               type="button"
               aria-label="Close chat"
               onClick={() => setIsOpen(false)}
-              className="absolute -top-2.5 -right-2.5 z-10 grid size-6 place-items-center rounded-full bg-card ring-1 ring-border/70 text-muted-foreground transition-colors hover:text-foreground"
+              className={cn(
+                "absolute z-10 grid size-6 place-items-center rounded-full bg-card ring-1 ring-border/70 text-muted-foreground transition-colors hover:text-foreground",
+                isMobile ? "top-2 right-2" : "-top-2.5 -right-2.5",
+              )}
             >
               <X className="size-3.5" />
             </button>
 
             <section
-              className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-card/95 w-[420px]"
-              style={{
-                // p-6 wrapper (48px v) + gap-3 (12px) + FAB row (~80px) = ~140px overhead.
-                // Cap at 48rem (768px). Fall back to 720px if no parent frame.
-                height: `min(48rem, ${availHeight ? Math.max(300, availHeight - 140) : 720}px)`,
-              }}
+              className={cn(
+                "flex min-w-0 flex-col overflow-hidden border border-border/70 bg-card/95",
+                isMobile ? "flex-1 min-h-0 w-full rounded-none" : "rounded-2xl",
+              )}
+              style={
+                isMobile
+                  ? undefined
+                  : {
+                      // px-3 wrapper (6px×2=12px) constrains the panel. Fall back to 420px if no parent.
+                      width: `min(420px, ${availWidth ? Math.max(260, availWidth - 48) : 420}px)`,
+                      // wrapper padding + gap + FAB row (~140px overhead).
+                      // Cap at 48rem (768px). Fall back to 720px if no parent frame.
+                      height: `min(48rem, ${availHeight ? Math.max(300, availHeight - 140) : 720}px)`,
+                    }
+              }
               aria-label="Embedded sales assistant chat"
             >
               <header className="flex items-center gap-3 border-b border-border/70 bg-background/85 px-4 py-3 backdrop-blur">
@@ -381,7 +464,12 @@ export function ChatEmbed() {
         ) : null}
 
         {/* FAB row — bubble (collapses when hidden) + Innovi button */}
-        <div className="flex items-center gap-3 py-2">
+        <div className={cn(
+          "shrink-0 flex items-center gap-3",
+          isMobile && isOpen
+            ? "self-end px-3 pb-6 pt-2" // mobile full-screen: own padding at bottom-right
+            : "py-2",                    // desktop: wrapper supplies the outer padding
+        )}>
           <InnoviFab
             state={innoviState}
             isOpen={isOpen}

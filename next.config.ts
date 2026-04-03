@@ -1,23 +1,14 @@
 import type { NextConfig } from "next";
 
-/**
- * Same-origin `/api/*` as in `index.html` (`API_BASE = ""`).
- * Set `SALES_AGENT_API_ORIGIN` to your backend (e.g. `http://localhost:3001`) so
- * Next proxies `/api/...` → backend. Leave unset if you use
- * `NEXT_PUBLIC_API_BASE_URL` to call the API directly instead.
- */
+const SALES_AGENT_ORIGIN =
+  "https://proc-sales-agent-impl-7a2j52.2ky31l-1.deu-c1.eu1.cloudhub.io";
+
 const nextConfig: NextConfig = {
   async rewrites() {
-    const salesAgentOrigin = (
-      process.env.SALES_AGENT_API_ORIGIN ||
-      process.env.NEXT_PUBLIC_API_BASE_URL ||
-      ""
-    ).replace(/\/$/, "");
-    if (!salesAgentOrigin) return [];
     return [
       {
         source: "/api/:path*",
-        destination: `${salesAgentOrigin}/api/:path*`,
+        destination: `${SALES_AGENT_ORIGIN}/api/:path*`,
       },
     ];
   },

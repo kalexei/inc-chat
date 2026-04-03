@@ -3,11 +3,12 @@
 import { useSalesAgentChat } from "@/hooks/use-sales-agent-chat";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { ChevronDown, MessageCircle, X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { useLayoutEffect, useRef, useState, useEffect } from "react";
 import { ChatComposer } from "./chat-composer";
 import { ChatMessageList } from "./chat-message-list";
+import { InnoviFab, type InnoviState } from "./innovi-fab";
+
 export function ChatEmbed() {
   const chat = useSalesAgentChat();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -18,11 +19,97 @@ export function ChatEmbed() {
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const embedId = "rak-inc-chat";
 
+  // ─── Innovi state ────────────────────────────────────────────────────────────
+  const [innoviState, setInnoviState] = useState<InnoviState>("neutral");
+  const isOpenRef = useRef(false);
+  const prevTypingRef = useRef(false);
+  const speakingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  useEffect(() => {
+    const isError = chat.sessionLabel.toLowerCase().includes("error");
+    if (isError) {
+      if (speakingTimerRef.current) { clearTimeout(speakingTimerRef.current); speakingTimerRef.current = null; }
+      prevTypingRef.current = false;
+      setInnoviState("error");
+      return;
+    }
+
+    const isThinking = chat.typing || chat.isSending;
+    if (isThinking) {
+      if (speakingTimerRef.current) { clearTimeout(speakingTimerRef.current); speakingTimerRef.current = null; }
+      prevTypingRef.current = true;
+      setInnoviState("thinking");
+      return;
+    }
+
+    if (prevTypingRef.current) {
+      prevTypingRef.current = false;
+      setInnoviState("speaking");
+      speakingTimerRef.current = setTimeout(() => {
+        speakingTimerRef.current = null;
+        setInnoviState(isOpenRef.current ? "happy" : "neutral");
+      }, 2500);
+      return;
+    }
+
+    // Don't override if speaking timer is still counting down
+    if (!speakingTimerRef.current) {
+      setInnoviState(isOpen ? "happy" : "neutral");
+    }
+  }, [chat.typing, chat.isSending, chat.sessionLabel, isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (speakingTimerRef.current) clearTimeout(speakingTimerRef.current);
+    };
+  }, []);
+
+  // ─── Bubble message ───────────────────────────────────────────────────────────
+  const [bubbleText, setBubbleText] = useState<string | null>(null);
+  const [bubbleDismissed, setBubbleDismissed] = useState(false);
+  const hasOpenedRef = useRef(false);
+  const chatMessagesRef = useRef(chat.messages);
+  useEffect(() => { chatMessagesRef.current = chat.messages; }, [chat.messages]);
+
+  // Proactive greeting after 2.5 s on first load
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (!hasOpenedRef.current && !bubbleDismissed) {
+        setBubbleText("Hi! I'm Innovi 👋 — ask me anything about Innovation City.");
+      }
+    }, 2500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // When chat closes after a conversation, preview last agent message in bubble
+  useEffect(() => {
+    if (isOpen) {
+      hasOpenedRef.current = true;
+      setBubbleText(null);
+    } else if (hasOpenedRef.current && !bubbleDismissed) {
+      const lastAsst = [...chatMessagesRef.current]
+        .reverse()
+        .find((m) => m.role === "assistant");
+      if (lastAsst) {
+        const plain = lastAsst.content
+          .replace(/\|[^\n]*/g, "")
+          .replace(/[*#`_~[\]]/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+        setBubbleText(plain.slice(0, 72) + (plain.length > 72 ? "…" : ""));
+      }
+    }
+  }, [isOpen, bubbleDismissed]);
+
+  // ─── Background transparency ──────────────────────────────────────────────────
   const skipRestoreOnceRef = useRef(true);
 
   useLayoutEffect(() => {
-    // Make the entire iframe background transparent (host page should not be blocked).
-    // RootLayout/global CSS sets `body` background; we override it here only for /embed.
     const prevHtmlBg = document.documentElement.style.background;
     const prevBodyBg = document.body.style.background;
     const prevHtmlBgColor = document.documentElement.style.backgroundColor;
@@ -31,22 +118,12 @@ export function ChatEmbed() {
     const prevBodyBgImg = document.body.style.backgroundImage;
     document.documentElement.style.background = "transparent";
     document.body.style.background = "transparent";
-    document.documentElement.style.setProperty(
-      "background-color",
-      "transparent",
-      "important"
-    );
-    document.body.style.setProperty(
-      "background-color",
-      "transparent",
-      "important"
-    );
+    document.documentElement.style.setProperty("background-color", "transparent", "important");
+    document.body.style.setProperty("background-color", "transparent", "important");
     document.documentElement.style.backgroundImage = "none";
     document.body.style.backgroundImage = "none";
     return () => {
       if (skipRestoreOnceRef.current) {
-        // In development, React Strict Mode mounts/unmounts twice to detect side effects.
-        // Skipping the first restore prevents a visible "black flash".
         skipRestoreOnceRef.current = false;
         return;
       }
@@ -67,14 +144,14 @@ export function ChatEmbed() {
     return () => window.clearTimeout(t);
   }, [isOpen]);
 
+  // Notify parent iframe of open state + whether bubble is showing
   useEffect(() => {
-    // Let the embedding script know when we open/close
-    // so it can resize the iframe and avoid covering other UI.
+    const hasBubble = !isOpen && !bubbleDismissed && Boolean(bubbleText);
     window.parent?.postMessage(
-      { source: "rak-inc-chat", id: embedId, open: isOpen },
+      { source: "rak-inc-chat", id: embedId, open: isOpen, hasBubble },
       "*"
     );
-  }, [isOpen]);
+  }, [isOpen, bubbleText, bubbleDismissed]);
 
   useEffect(() => {
     if (!isOpen || !chat.hasMessages) return;
@@ -91,7 +168,6 @@ export function ChatEmbed() {
       nearBottomRef.current = true;
       return;
     }
-
     const viewport = scrollAreaRef.current?.querySelector<HTMLDivElement>(
       '[data-slot="scroll-area-viewport"]'
     );
@@ -101,9 +177,8 @@ export function ChatEmbed() {
       const threshold = 90;
       const distanceToBottom =
         viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
-      const isNearBottom = distanceToBottom <= threshold;
-      nearBottomRef.current = isNearBottom;
-      setShowJumpToLatest(!isNearBottom);
+      nearBottomRef.current = distanceToBottom <= threshold;
+      setShowJumpToLatest(distanceToBottom > threshold);
     };
 
     updatePositionState();
@@ -123,21 +198,35 @@ export function ChatEmbed() {
 
   return (
     <>
-      {/* Ensure the embed iframe never paints a background behind the widget */}
       <style>{`html, body { background: transparent !important; }`}</style>
 
+      {/* Chat panel */}
       {shouldRenderPanel ? (
-        <section
+        /* Wrapper is overflow-visible so the X badge can sit half outside the panel corner */
+        <div
           className={cn(
-            "fixed right-0 bottom-14 z-50 flex min-w-0 flex-col overflow-hidden border border-border/70 bg-card/95",
-            "h-[min(48rem,calc(100dvh-4rem))] w-[min(26.25rem,calc(100vw-0.75rem))] max-w-[calc(100vw-0.75rem)] rounded-2xl",
+            "fixed right-3 bottom-19 z-50",
+            "h-[min(48rem,calc(100dvh-5rem))] w-[min(26.25rem,calc(100vw-0.75rem))] max-w-[calc(100vw-0.75rem)]",
             "origin-bottom-right transition-[opacity,transform,filter] duration-350 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
             isOpen
               ? "pointer-events-auto translate-y-0 scale-100 opacity-100 blur-0"
               : "pointer-events-none translate-y-6 scale-[0.94] opacity-0 blur-[2px]"
           )}
-          aria-label="Embedded sales assistant chat"
         >
+          {/* X badge — half outside the top-right corner, matching the FAB badge style */}
+          <button
+            type="button"
+            aria-label="Close chat"
+            onClick={() => setIsOpen(false)}
+            className="absolute -top-2.5 -right-2.5 z-10 grid size-6 place-items-center rounded-full bg-card ring-1 ring-border/70 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <X className="size-3.5" />
+          </button>
+
+          <section
+            className="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-card/95"
+            aria-label="Embedded sales assistant chat"
+          >
           <header className="flex items-center gap-3 border-b border-border/70 bg-background/85 px-4 py-3 backdrop-blur">
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">
@@ -180,42 +269,18 @@ export function ChatEmbed() {
               onAutoResize={chat.autoResize}
             />
           </div>
-        </section>
+          </section>
+        </div>
       ) : null}
 
-      <div className="fixed right-0 bottom-0 z-50">
-        <Button
-          type="button"
-          size="icon"
-          className={cn(
-            "size-14 rounded-full shadow-none ring-0",
-            "transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-            "active:scale-95",
-            isOpen ? "rotate-0" : "hover:-translate-y-0.5"
-          )}
-          aria-label={isOpen ? "Close chat" : "Open chat"}
-          onClick={() => setIsOpen((v) => !v)}
-        >
-          <span className="relative grid place-items-center">
-            <MessageCircle
-              className={cn(
-                "size-5 transition-all duration-250",
-                isOpen
-                  ? "absolute scale-50 rotate-45 opacity-0"
-                  : "scale-100 rotate-0 opacity-100"
-              )}
-            />
-            <X
-              className={cn(
-                "size-5 transition-all duration-250",
-                isOpen
-                  ? "scale-100 rotate-0 opacity-100"
-                  : "absolute scale-50 -rotate-45 opacity-0"
-              )}
-            />
-          </span>
-        </Button>
-      </div>
+      {/* Innovi FAB */}
+      <InnoviFab
+        state={innoviState}
+        isOpen={isOpen}
+        bubble={bubbleDismissed ? null : bubbleText}
+        onToggle={() => setIsOpen((v) => !v)}
+        onDismissBubble={() => setBubbleDismissed(true)}
+      />
     </>
   );
 }

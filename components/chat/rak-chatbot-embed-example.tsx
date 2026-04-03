@@ -63,39 +63,63 @@ export default function RakChatbotEmbedExample({
       };
     };
 
-    const applySize = (open: boolean) => {
-      const targetW = open ? openWidth : closedSize;
-      const targetH = open ? openHeight : closedSize;
+    // When bubble is visible the iframe needs to be wide enough to show it
+    // (bubble ~210px + gap ~12px + FAB 56px + right padding 12px ≈ 290px → 300px)
+    const BUBBLE_W = 300;
+    const BUBBLE_H = 80;
+
+    const applySize = (open: boolean, hasBubble = false) => {
+      let targetW: number;
+      let targetH: number;
+      if (open) {
+        targetW = openWidth;
+        targetH = openHeight;
+      } else if (hasBubble) {
+        targetW = BUBBLE_W;
+        targetH = BUBBLE_H;
+      } else {
+        targetW = closedSize;
+        targetH = closedSize;
+      }
       const { w, h } = clampSize(targetW, targetH);
       iframe.style.width = `${w}px`;
       iframe.style.height = `${h}px`;
     };
 
     let isOpen = false;
+    let hasBubble = false;
     let closeTimer: number | null = null;
 
-    const setOpen = (open: boolean) => {
+    const setOpen = (open: boolean, bubble: boolean) => {
       isOpen = open;
+      hasBubble = bubble;
       if (closeTimer) window.clearTimeout(closeTimer);
       if (open) {
-        applySize(true);
+        applySize(true, false);
       } else {
         // Keep iframe expanded briefly for close animation in /embed.
-        closeTimer = window.setTimeout(() => applySize(false), 280);
+        closeTimer = window.setTimeout(() => applySize(false, hasBubble), 280);
       }
     };
 
     const handleMessage = (event: MessageEvent) => {
       const data = event.data as
-        | { source?: string; id?: string; open?: boolean }
+        | { source?: string; id?: string; open?: boolean; hasBubble?: boolean }
         | undefined;
       if (!data || data.source !== "rak-inc-chat" || data.id !== messageId)
         return;
       if (typeof data.open !== "boolean") return;
-      setOpen(data.open);
+      const bubble = Boolean(data.hasBubble);
+      // If only bubble visibility changed while closed, resize immediately
+      if (!data.open && !isOpen && bubble !== hasBubble) {
+        hasBubble = bubble;
+        applySize(false, hasBubble);
+        return;
+      }
+      setOpen(data.open, bubble);
     };
 
-    const handleResize = () => applySize(isOpen);
+    const handleResize = () => applySize(isOpen, hasBubble);
 
     window.addEventListener("message", handleMessage);
     window.addEventListener("resize", handleResize);

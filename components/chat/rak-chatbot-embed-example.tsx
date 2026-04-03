@@ -5,27 +5,25 @@ import { useEffect } from "react";
 type RakChatbotEmbedExampleProps = {
   src?: string;
   messageId?: string;
-  closedSize?: number;
-  openWidth?: number;
-  openHeight?: number;
+  /** Initial iframe size before the first ResizeObserver postMessage arrives (~100ms). */
+  initialSize?: number;
   right?: number;
   bottom?: number;
-  radius?: number;
 };
 
 /**
  * Copy this component into another Next.js app and render it once
  * (for example in your root layout or page) to mount the chatbot iframe.
+ *
+ * The iframe auto-sizes to fit its content via ResizeObserver + postMessage —
+ * no need to specify closedSize / openWidth / openHeight.
  */
 export default function RakChatbotEmbedExample({
   src = "http://localhost:3000/embed",
   messageId = "rak-inc-chat",
-  closedSize = 64,
-  openWidth = 420,
-  openHeight = 820,
+  initialSize = 90,
   right = 12,
   bottom = 12,
-  radius = 16,
 }: RakChatbotEmbedExampleProps) {
   useEffect(() => {
     const iframeId = "rak-inc-chat-iframe";
@@ -42,6 +40,8 @@ export default function RakChatbotEmbedExample({
       position: "fixed",
       right: `${right}px`,
       bottom: `${bottom}px`,
+      width: `${initialSize}px`,
+      height: `${initialSize}px`,
       border: "0",
       borderRadius: "0",
       overflow: "hidden",
@@ -63,62 +63,133 @@ export default function RakChatbotEmbedExample({
       };
     };
 
-    const applySize = (open: boolean) => {
-      const targetW = open ? openWidth : closedSize;
-      const targetH = open ? openHeight : closedSize;
-      const { w, h } = clampSize(targetW, targetH);
-      iframe.style.width = `${w}px`;
-      iframe.style.height = `${h}px`;
+    // Track the last applied size for window-resize re-clamping.
+    let lastW = initialSize;
+    let lastH = initialSize;
+    // Dimensions waiting to be applied after the close animation.
+    let pendingW: number | null = null;
+    let pendingH: number | null = null;
+    let closeTimer: number | null = null;
+    let isOpen = false;
+    let isFullscreen = false;
+
+    const applyFullscreen = () => {
+      isFullscreen = true;
+      Object.assign(iframe.style, {
+        top: "0", left: "0", right: "0", bottom: "0",
+        width: "100%", height: "100%",
+        borderRadius: "0",
+      });
     };
 
-    let isOpen = false;
-    let closeTimer: number | null = null;
-
-    const setOpen = (open: boolean) => {
-      isOpen = open;
-      if (closeTimer) window.clearTimeout(closeTimer);
-      if (open) {
-        applySize(true);
-      } else {
-        // Keep iframe expanded briefly for close animation in /embed.
-        closeTimer = window.setTimeout(() => applySize(false), 280);
-      }
+    const applySize = (w: number, h: number) => {
+      isFullscreen = false;
+      const { w: cw, h: ch } = clampSize(w, h);
+      lastW = cw;
+      lastH = ch;
+      iframe.style.top    = "auto";
+      iframe.style.left   = "auto";
+      iframe.style.right  = `${right}px`;
+      iframe.style.bottom = `${bottom}px`;
+      iframe.style.width  = `${cw}px`;
+      iframe.style.height = `${ch}px`;
     };
 
     const handleMessage = (event: MessageEvent) => {
       const data = event.data as
-        | { source?: string; id?: string; open?: boolean }
+        | { source?: string; id?: string; open?: boolean; fullscreen?: boolean; width?: number; height?: number }
         | undefined;
-      if (!data || data.source !== "rak-inc-chat" || data.id !== messageId)
+
+      // Child signals readiness — re-send constraints so it gets availWidth
+      // even if our "load" callback fired before React registered its listener.
+      if (data?.source === "rak-inc-chat-ready" && data.id === messageId) {
+        sendAvailHeight();
         return;
+      }
+
+      if (!data || data.source !== "rak-inc-chat" || data.id !== messageId) return;
       if (typeof data.open !== "boolean") return;
-      setOpen(data.open);
+
+      // Fullscreen mode (mobile open): expand iframe to cover the whole viewport.
+      if (data.fullscreen === true) {
+        if (closeTimer) { window.clearTimeout(closeTimer); closeTimer = null; pendingW = null; pendingH = null; }
+        isOpen = true;
+        applyFullscreen();
+        return;
+      }
+
+      // Dimensions are required; old-format messages without them are ignored.
+      if (typeof data.width !== "number" || typeof data.height !== "number") return;
+
+      const wasOpen = isOpen;
+      isOpen = data.open;
+
+      if (data.open) {
+        // Opening: cancel any pending close and expand immediately.
+        if (closeTimer) { window.clearTimeout(closeTimer); closeTimer = null; pendingW = null; pendingH = null; }
+        applySize(data.width, data.height);
+      } else if (wasOpen || isFullscreen) {
+        // Transitioning from open → closed: wait for the close animation,
+        // but keep updating pending dims so we apply the freshest value.
+        pendingW = data.width;
+        pendingH = data.height;
+        if (!closeTimer) {
+          closeTimer = window.setTimeout(() => {
+            closeTimer = null;
+            if (pendingW !== null) {
+              applySize(pendingW, pendingH!);
+              pendingW = null;
+              pendingH = null;
+            }
+          }, 280);
+        }
+      } else {
+        // Already closed (e.g. bubble appeared/disappeared while closed).
+        if (closeTimer) {
+          // Close timer still running — update pending but don't restart.
+          pendingW = data.width;
+          pendingH = data.height;
+        } else {
+          applySize(data.width, data.height);
+        }
+      }
     };
 
-    const handleResize = () => applySize(isOpen);
+    const handleResize = () => {
+      if (isFullscreen) {
+        sendAvailHeight();
+        return;
+      }
+      const w = pendingW !== null ? pendingW : lastW;
+      const h = pendingH !== null ? pendingH : lastH;
+      applySize(w, h);
+    };
+
+    const sendAvailHeight = () => {
+      if (!iframe.contentWindow) return;
+      const availHeight = window.innerHeight - bottom - 32; // 32px top margin
+      const availWidth  = window.innerWidth  - right  - 8;  // 8px left margin
+      iframe.contentWindow.postMessage(
+        { source: "rak-inc-chat-host", availHeight, availWidth },
+        "*"
+      );
+    };
+
+    iframe.addEventListener("load", sendAvailHeight);
+
+    const _handleResize = handleResize;
+    const handleResizeWithHeight = () => { _handleResize(); sendAvailHeight(); };
 
     window.addEventListener("message", handleMessage);
-    window.addEventListener("resize", handleResize);
-
-    // Initial closed state
-    applySize(false);
+    window.addEventListener("resize", handleResizeWithHeight);
 
     return () => {
       if (closeTimer) window.clearTimeout(closeTimer);
       window.removeEventListener("message", handleMessage);
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", handleResizeWithHeight);
       iframe.remove();
     };
-  }, [
-    src,
-    messageId,
-    closedSize,
-    openWidth,
-    openHeight,
-    right,
-    bottom,
-    radius,
-  ]);
+  }, [src, messageId, initialSize, right, bottom]);
 
   return null;
 }

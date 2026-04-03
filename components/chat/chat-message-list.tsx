@@ -1,130 +1,145 @@
 "use client";
 
 import type { ChatMessage } from "@/lib/chat-types";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-
-const PAGE_LOAD_AVATAR_SEED =
-  typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import type { Components } from "react-markdown";
+import { useState, useEffect } from "react";
 
 type ChatMessageListProps = {
   messages: ChatMessage[];
   typing: boolean;
 };
 
-function PixelPacmanAvatar() {
-  return (
-    <svg viewBox="0 0 16 16" className="size-7 ml-1 text-primary" aria-hidden>
-      {/* minimalist pixel Pac-Man silhouette */}
-      <rect x="4" y="2" width="2" height="2" fill="currentColor" />
-      <rect x="6" y="2" width="2" height="2" fill="currentColor" />
-      <rect x="8" y="2" width="2" height="2" fill="currentColor" />
+const assistantComponents: Components = {
+  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+  em: ({ children }) => <em className="italic">{children}</em>,
+  ul: ({ children }) => <ul className="mb-2 list-disc pl-4 last:mb-0">{children}</ul>,
+  ol: ({ children }) => <ol className="mb-2 list-decimal pl-4 last:mb-0">{children}</ol>,
+  li: ({ children }) => <li className="mb-0.5">{children}</li>,
+  a: ({ href, children }) => (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 opacity-80 hover:opacity-100">
+      {children}
+    </a>
+  ),
+  code: ({ children }) => (
+    <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[13px]">{children}</code>
+  ),
+  pre: ({ children }) => (
+    <pre className="mb-2 overflow-x-auto rounded-lg bg-white/10 p-3 font-mono text-[13px] last:mb-0">{children}</pre>
+  ),
+  table: ({ children }) => (
+    <div className="mb-2 overflow-x-auto last:mb-0">
+      <table className="w-full border-collapse text-[13px]">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead className="border-b border-white/20">{children}</thead>,
+  tbody: ({ children }) => <tbody>{children}</tbody>,
+  tr: ({ children }) => <tr className="border-b border-white/10 last:border-0">{children}</tr>,
+  th: ({ children }) => <th className="px-3 py-1.5 text-left font-semibold">{children}</th>,
+  td: ({ children }) => <td className="px-3 py-1.5">{children}</td>,
+};
 
-      <rect x="2" y="4" width="2" height="2" fill="currentColor" />
-      <rect x="4" y="4" width="2" height="2" fill="currentColor" />
-      <rect x="6" y="4" width="2" height="2" fill="currentColor" />
-      <rect x="8" y="4" width="2" height="2" fill="currentColor" />
-      <rect x="10" y="4" width="2" height="2" fill="currentColor" />
-
-      <rect x="2" y="6" width="2" height="2" fill="currentColor" />
-      <rect x="4" y="6" width="2" height="2" fill="currentColor" />
-
-      <rect x="2" y="8" width="2" height="2" fill="currentColor" />
-      <rect x="4" y="8" width="2" height="2" fill="currentColor" />
-
-      <rect x="2" y="10" width="2" height="2" fill="currentColor" />
-      <rect x="4" y="10" width="2" height="2" fill="currentColor" />
-      <rect x="6" y="10" width="2" height="2" fill="currentColor" />
-      <rect x="8" y="10" width="2" height="2" fill="currentColor" />
-      <rect x="10" y="10" width="2" height="2" fill="currentColor" />
-
-      <rect x="4" y="12" width="2" height="2" fill="currentColor" />
-      <rect x="6" y="12" width="2" height="2" fill="currentColor" />
-      <rect x="8" y="12" width="2" height="2" fill="currentColor" />
-    </svg>
-  );
-}
-
-function RoleAvatar({
-  role,
-  userSeed,
-}: {
-  role: "user" | "assistant";
-  userSeed: string;
-}) {
-  const isUser = role === "user";
-  const neutralHumanSrc = `https://api.dicebear.com/9.x/identicon/svg?seed=${userSeed}&backgroundColor=CDCCE3&rowColor=5752A3`;
-
-  return (
-    <Avatar
-      size={isUser ? "sm" : "default"}
-      className={cn(
-        "mt-0.5 shrink-0",
-        isUser ? "ring-2 ring-[#5752A3]/45" : "ring-1 ring-primary/20"
-      )}
-    >
-      {isUser ? (
-        <AvatarImage src={neutralHumanSrc} alt="Visitor avatar" />
-      ) : null}
-      <AvatarFallback
-        className={cn(
-          "text-xs font-semibold",
-          isUser ? "bg-[#1B173A] text-white" : "bg-primary/15 text-primary"
-        )}
-      >
-        {isUser ? "V" : <PixelPacmanAvatar />}
-      </AvatarFallback>
-    </Avatar>
-  );
+function timeAgo(ts: number, now: number): string {
+  const diff = Math.floor((now - ts) / 1000);
+  if (diff < 10) return "just now";
+  if (diff < 60) return `${diff}s ago`;
+  const mins = Math.floor(diff / 60);
+  if (mins < 60) return `${mins} min${mins === 1 ? "" : "s"} ago`;
+  const hrs = Math.floor(diff / 3600);
+  if (hrs < 24) return `${hrs} hr${hrs === 1 ? "" : "s"} ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
 }
 
 export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
-  const userAvatarSeed = PAGE_LOAD_AVATAR_SEED;
+  // Indices whose timestamp is currently visible.
+  // Initialise with the last message so it shows by default.
+  const [shown, setShown] = useState<Set<number>>(
+    () => new Set(messages.length > 0 ? [messages.length - 1] : [])
+  );
+
+  // Tick every 30 s so "just now" → "1 min ago" stays accurate.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Always show the timestamp for the newest message automatically.
+  useEffect(() => {
+    if (messages.length === 0) return;
+    setShown((prev) => new Set([...prev, messages.length - 1]));
+  }, [messages.length]);
+
+  const toggle = (i: number) => {
+    setShown((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  };
 
   return (
     <div className="space-y-4 pb-2">
       {messages.map((m, i) => (
         <div
           key={`${i}-${m.role}-${m.content.slice(0, 24)}`}
-          className={cn("flex gap-3", m.role === "user" && "flex-row-reverse")}
+          data-chat-role={m.role}
+          className={cn("flex flex-col", m.role === "user" && "items-end")}
         >
-          <RoleAvatar role={m.role} userSeed={userAvatarSeed} />
-          <div
-            className={cn(
-              "flex min-w-0 max-w-[min(100%,42rem)] flex-col gap-1",
-              m.role === "user" && "items-end"
+          <div className={cn("flex min-w-0 max-w-[min(100%,42rem)] flex-col gap-1.5", m.role === "user" && "items-end")}>
+            {m.role === "assistant" && (
+              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Innovi
+              </div>
             )}
-          >
-            <div
+
+            {/* Message bubble — click to toggle timestamp */}
+            <button
+              type="button"
+              onClick={() => m.sentAt && toggle(i)}
               className={cn(
-                "text-xs font-medium uppercase tracking-wide text-muted-foreground"
-              )}
-            >
-              {m.role === "user" ? "Visitor" : "Sales Agent"}
-            </div>
-            <div
-              className={cn(
-                "rounded-2xl px-3.5 py-2.5 text-[14px] leading-6",
+                "rounded-2xl border px-3.5 py-2.5 text-[14px] leading-6 text-left",
                 m.role === "user"
-                  ? "rounded-br-md bg-primary text-primary-foreground"
-                  : "rounded-bl-md border border-border/80 bg-muted/50 text-foreground"
+                  ? "rounded-br-md border-white bg-white text-black"
+                  : "rounded-bl-md border-[#3a3a3a] bg-[#252525] text-white",
+                m.sentAt ? "cursor-pointer" : "cursor-default",
               )}
             >
-              {m.content}
+              {m.role === "assistant" ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={assistantComponents}>
+                  {m.content}
+                </ReactMarkdown>
+              ) : (
+                m.content
+              )}
+            </button>
+
+            {/* Timestamp — slides in/out */}
+            <div
+              className={cn(
+                "overflow-hidden text-[11px] text-muted-foreground/70 transition-[max-height,opacity] duration-200 ease-in-out",
+                shown.has(i) && m.sentAt
+                  ? "max-h-5 opacity-100"
+                  : "max-h-0 opacity-0",
+              )}
+            >
+              {m.sentAt ? timeAgo(m.sentAt, now) : null}
             </div>
           </div>
         </div>
       ))}
+
       {typing ? (
-        <div className="flex gap-3">
-          <RoleAvatar role="assistant" userSeed={userAvatarSeed} />
+        <div className="flex">
           <div className="flex min-w-0 flex-col gap-1">
             <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Sales Agent
+              Innovi
             </div>
-            <div className="max-w-[min(100%,42rem)] rounded-2xl rounded-bl-md border border-dashed border-border/80 bg-muted/30 px-3.5 py-2.5 text-[14px] leading-6 text-muted-foreground">
+            <div className="max-w-[min(100%,42rem)] rounded-2xl rounded-bl-md border border-[#3a3a3a] bg-[#252525] px-3.5 py-2.5 text-[14px] leading-6 text-white/85">
               Agent is thinking…
             </div>
           </div>

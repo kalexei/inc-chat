@@ -29,6 +29,9 @@ import {
   useState,
 } from "react";
 
+const DEFAULT_ASSISTANT_GREETING =
+  "Hi there 👋\nYou are now speaking with Innovi. How can I help?";
+
 export function useSalesAgentChat() {
   const apiBase = getApiBase();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -226,9 +229,7 @@ export function useSalesAgentChat() {
       setSessionAndStore(sid, "", true);
       setInputEnabled(true);
       log(`Session created: ${sid}`, "log-success");
-      if (cachedGreeting) {
-        setMessages([{ role: "assistant", content: cachedGreeting }]);
-      }
+      setMessages([{ role: "assistant", content: DEFAULT_ASSISTANT_GREETING, sentAt: Date.now() }]);
       setIsSending(false);
       return true;
     } catch (e) {
@@ -249,8 +250,8 @@ export function useSalesAgentChat() {
   ]);
 
   const loadSession = useCallback(
-    async (id: string) => {
-      if (isSending) return;
+    async (id: string): Promise<boolean> => {
+      if (isSending) return false;
       log(`Loading session ${id}…`, "log-info");
       try {
         const res = await fetch(`${apiBase}/api/session/${id}`, {
@@ -258,7 +259,7 @@ export function useSalesAgentChat() {
         });
         if (!res.ok) {
           log(`Session not found: ${id}`, "log-error");
-          return;
+          return false;
         }
         const data = (await res.json()) as SessionApiResponse;
         setMessages([]);
@@ -285,8 +286,10 @@ export function useSalesAgentChat() {
         );
         setInputEnabled(true);
         log(`Session loaded: ${msgs.length} messages`, "log-success");
+        return true;
       } catch (e) {
         log(`Failed to load session: ${(e as Error).message}`, "log-error");
+        return false;
       }
     },
     [apiBase, authHeaders, isSending, log, updateRaw, updateSlotsFromResponse],
@@ -303,7 +306,10 @@ export function useSalesAgentChat() {
       await Promise.resolve();
       const sessions = loadStoredSessions();
       if (sessions.length > 0) {
-        await loadSession(sessions[0]!.id);
+        const ok = await loadSession(sessions[0]!.id);
+        if (!ok) {
+          void newSession();
+        }
       } else {
         void newSession();
       }
@@ -354,7 +360,7 @@ export function useSalesAgentChat() {
     setIsSending(true);
     input.value = "";
     autoResize();
-    setMessages((m) => [...m, { role: "user", content: message }]);
+    setMessages((m) => [...m, { role: "user", content: message, sentAt: Date.now() }]);
     setTyping(true);
 
     const body: { message: string; sessionId?: string } = { message };
@@ -382,6 +388,7 @@ export function useSalesAgentChat() {
             role: "assistant",
             content:
               "⚠ Hourly token limit reached. Please wait before sending more messages.",
+            sentAt: Date.now(),
           },
         ]);
       } else if (!res.ok) {
@@ -394,6 +401,7 @@ export function useSalesAgentChat() {
           {
             role: "assistant",
             content: `⚠ Error: ${data.error || "Unknown error"}`,
+            sentAt: Date.now(),
           },
         ]);
       } else {
@@ -401,7 +409,7 @@ export function useSalesAgentChat() {
         setSessionAndStore(data.sessionId, message, isNewSession);
         setMessages((m) => [
           ...m,
-          { role: "assistant", content: data.reply || "(empty response)" },
+          { role: "assistant", content: data.reply || "(empty response)", sentAt: Date.now() },
         ]);
         updateSlotsFromResponse(
           (data.slots || {}) as Record<string, unknown>,
@@ -429,7 +437,10 @@ export function useSalesAgentChat() {
     }
 
     setIsSending(false);
-    input.focus();
+    // Ensure focus is restored after state updates/rerender.
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
   }, [
     isSending,
     apiBase,
@@ -439,6 +450,7 @@ export function useSalesAgentChat() {
     updateRaw,
     updateSlotsFromResponse,
     autoResize,
+    textareaRef,
   ]);
 
   const sendSuggestedPrompt = useCallback(

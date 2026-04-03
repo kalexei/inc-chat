@@ -2,10 +2,43 @@
 
 import type { ChatMessage } from "@/lib/chat-types";
 import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import type { Components } from "react-markdown";
 
 type ChatMessageListProps = {
   messages: ChatMessage[];
   typing: boolean;
+};
+
+const assistantComponents: Components = {
+  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+  em: ({ children }) => <em className="italic">{children}</em>,
+  ul: ({ children }) => <ul className="mb-2 list-disc pl-4 last:mb-0">{children}</ul>,
+  ol: ({ children }) => <ol className="mb-2 list-decimal pl-4 last:mb-0">{children}</ol>,
+  li: ({ children }) => <li className="mb-0.5">{children}</li>,
+  a: ({ href, children }) => (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 opacity-80 hover:opacity-100">
+      {children}
+    </a>
+  ),
+  code: ({ children }) => (
+    <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[13px]">{children}</code>
+  ),
+  pre: ({ children }) => (
+    <pre className="mb-2 overflow-x-auto rounded-lg bg-white/10 p-3 font-mono text-[13px] last:mb-0">{children}</pre>
+  ),
+  table: ({ children }) => (
+    <div className="mb-2 overflow-x-auto last:mb-0">
+      <table className="w-full border-collapse text-[13px]">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead className="border-b border-white/20">{children}</thead>,
+  tbody: ({ children }) => <tbody>{children}</tbody>,
+  tr: ({ children }) => <tr className="border-b border-white/10 last:border-0">{children}</tr>,
+  th: ({ children }) => <th className="px-3 py-1.5 text-left font-semibold">{children}</th>,
+  td: ({ children }) => <td className="px-3 py-1.5">{children}</td>,
 };
 
 export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
@@ -37,7 +70,16 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
                   : "rounded-bl-md border-[#3a3a3a] bg-[#252525] text-white"
               )}
             >
-              {m.content}
+              {m.role === "assistant" ? (
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={assistantComponents}
+                >
+                  {m.content}
+                </ReactMarkdown>
+              ) : (
+                m.content
+              )}
             </div>
           </div>
         </div>

@@ -6,9 +6,6 @@ declare global {
       init: (config?: {
         src?: string;
         messageId?: string;
-        closedSize?: number;
-        openWidth?: number;
-        openHeight?: number;
         right?: number;
         bottom?: number;
         allowedOrigins?: string[] | null;

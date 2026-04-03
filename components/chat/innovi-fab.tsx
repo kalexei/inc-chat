@@ -31,6 +31,10 @@ type InnoviFabProps = {
   onDismissBubble: () => void;
 };
 
+/**
+ * Renders the speech bubble + FAB button as a plain fragment.
+ * Positioning is handled by the parent wrapper in chat-embed.tsx.
+ */
 export function InnoviFab({
   state,
   isOpen,
@@ -41,51 +45,58 @@ export function InnoviFab({
   const showBubble = !isOpen && Boolean(bubble);
 
   return (
-    <div className="fixed right-3 bottom-3 z-50 flex items-center gap-3">
-      {/* Speech bubble wrapper — overflow-visible so the dismiss button can peek out */}
+    <>
+      {/*
+       * Speech bubble — max-width collapses to 0 when hidden.
+       * This layout change is picked up by the parent's ResizeObserver,
+       * which automatically resizes the iframe to fit.
+       *
+       * The wrapper is 220px wide (210px card + 10px room for the 7px arrow),
+       * keeping the arrow within the overflow:hidden clip boundary.
+       */}
       <div
         className={cn(
-          "relative transition-[opacity,transform] duration-350 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "overflow-hidden transition-[opacity,transform,max-width] duration-350 ease-[cubic-bezier(0.22,1,0.36,1)]",
           showBubble
-            ? "pointer-events-auto opacity-100 translate-x-0"
-            : "pointer-events-none opacity-0 translate-x-4",
+            ? "pointer-events-auto max-w-[220px] opacity-100 translate-x-0"
+            : "pointer-events-none max-w-0 opacity-0 translate-x-4",
         )}
       >
-        {/* Dismiss button — sits outside the bubble card */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDismissBubble();
-          }}
-          aria-label="Dismiss message"
-          tabIndex={showBubble ? 0 : -1}
-          className="absolute -top-2 -right-2 z-10 grid size-5 place-items-center rounded-full bg-muted text-muted-foreground ring-1 ring-border/60 transition-colors hover:text-foreground"
-        >
-          <X className="size-3" />
-        </button>
-
-        {/* Bubble card */}
         <div
           aria-live="polite"
-          className="relative max-w-[210px] rounded-2xl rounded-br-sm border border-border/70 bg-card/95 px-3.5 py-2.5 text-[13px] leading-snug text-foreground shadow-lg shadow-black/20 backdrop-blur"
+          className="relative w-[210px] rounded-2xl rounded-br-sm border border-border/70 bg-card/95 text-[13px] leading-snug text-foreground shadow-lg shadow-black/20 backdrop-blur"
         >
-          {/* Arrow pointing right toward the FAB */}
+          {/* Arrow pointing right toward FAB — sits in the 10px gap between card and wrapper edge */}
           <span
             aria-hidden="true"
             className="absolute top-1/2 -right-[7px] -translate-y-1/2 block h-3 w-3 rotate-45 border-r border-b border-border/70 bg-card/95"
           />
-          <p className="line-clamp-2 pr-1">{bubble}</p>
+          {/* Content row with inline dismiss button — no overflow issues */}
+          <div className="flex items-start gap-2 px-3 py-2.5">
+            <p className="flex-1 line-clamp-2 pr-0.5">{bubble}</p>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDismissBubble();
+              }}
+              aria-label="Dismiss message"
+              tabIndex={showBubble ? 0 : -1}
+              className="mt-0.5 shrink-0 grid size-4 place-items-center rounded-full bg-muted text-muted-foreground ring-1 ring-border/60 transition-colors hover:text-foreground"
+            >
+              <X className="size-2.5" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Innovi FAB */}
+      {/* Innovi FAB button */}
       <button
         type="button"
         aria-label={isOpen ? "Close chat" : "Open chat"}
         onClick={onToggle}
         className={cn(
-          "relative size-14 shrink-0 bg-transparent",
+          "relative size-16 shrink-0 bg-transparent",
           "transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
           "active:scale-95",
           !isOpen && "hover:-translate-y-1",
@@ -99,17 +110,17 @@ export function InnoviFab({
             alt=""
             aria-hidden="true"
             fill
-            sizes="56px"
+            sizes="64px"
             className={cn(
               "object-contain transition-opacity duration-500 ease-in-out",
               state === s
-                ? "opacity-100 drop-shadow-[0_6px_20px_rgba(87,82,163,0.6)]"
+                ? "opacity-100 drop-shadow-[0_-4px_16px_rgba(87,82,163,0.65)]"
                 : "opacity-0",
             )}
           />
         ))}
 
-        {/* X badge – top-right corner, visible when open */}
+        {/* X badge – top-right corner, visible when chat is open */}
         <span
           className={cn(
             "absolute -top-1 -right-1 z-10 grid size-5 place-items-center rounded-full",
@@ -123,6 +134,6 @@ export function InnoviFab({
           <X className="size-3 text-white" />
         </span>
       </button>
-    </div>
+    </>
   );
 }

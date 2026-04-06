@@ -4,6 +4,10 @@ import { getApiBase } from "@/lib/api-base";
 import { applySalesAgentApiKey } from "@/lib/sales-agent-auth";
 import { logToolCalls } from "@/lib/chat/log-tool-calls";
 import {
+  coerceMessageFromApi,
+  ensureMessageSentAt,
+} from "@/lib/chat/message-timestamps";
+import {
   loadStoredSessions,
   persistSessions,
   sessionTitle,
@@ -268,8 +272,13 @@ export function useSalesAgentChat() {
         setSessionLabel(id);
         setStoredSessions(loadStoredSessions());
 
-        const msgs = data.messages || [];
-        setMessages(msgs);
+        const rawMsgs = data.messages || [];
+        const msgs = rawMsgs.map(coerceMessageFromApi);
+        const stored = loadStoredSessions().find((s) => s.id === id);
+        const anchorMs =
+          stored?.createdAt ??
+          Date.now() - Math.max(1, msgs.length) * 60_000;
+        setMessages(ensureMessageSentAt(msgs, anchorMs));
 
         const merged = {
           ...(data.leadData || {}),

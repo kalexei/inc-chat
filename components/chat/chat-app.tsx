@@ -1,6 +1,7 @@
 "use client";
 
 import { useSalesAgentChat } from "@/hooks/use-sales-agent-chat";
+import { useInnoviState } from "@/hooks/use-innovi-state";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { ChatAppNav } from "./chat-app-nav";
 import { ChatMainColumn } from "./chat-main-column";
@@ -8,6 +9,12 @@ import { ChatMainColumn } from "./chat-main-column";
 export function ChatApp() {
   const chat = useSalesAgentChat();
   const { textareaRef } = chat.refs;
+  const innoviState = useInnoviState({
+    typing: chat.typing,
+    isSending: chat.isSending,
+    sessionLabel: chat.sessionLabel,
+    active: chat.hasMessages,
+  });
 
   return (
     <SidebarProvider defaultOpen className="h-dvh min-h-0">
@@ -39,6 +46,7 @@ export function ChatApp() {
           typing={chat.typing}
           inputEnabled={chat.inputEnabled}
           isSending={chat.isSending}
+          innoviState={innoviState}
           onSend={() => void chat.sendMessage()}
           onNewSession={() => void chat.newSession()}
           onAutoResize={chat.autoResize}

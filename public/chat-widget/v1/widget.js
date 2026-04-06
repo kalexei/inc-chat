@@ -1,4 +1,4 @@
-;(function () {
+(function () {
   const DEFAULTS = {
     src: "https://chat.example.com/embed",
     messageId: "rak-inc-chat",
@@ -78,12 +78,16 @@
     function applyFullscreen() {
       isFullscreen = true;
       Object.assign(iframe.style, {
-        top: "0", left: "0", right: "0", bottom: "0",
-        width: "100%", height: "100%",
+        top: "0",
+        left: "0",
+        right: "0",
+        bottom: "0",
+        width: "100%",
+        height: "100%",
         borderRadius: "0",
       });
       // Reset right/bottom positioning overrides set by applySize
-      iframe.style.right  = "0";
+      iframe.style.right = "0";
       iframe.style.bottom = "0";
     }
 
@@ -93,11 +97,11 @@
       lastW = s.w;
       lastH = s.h;
       // Restore corner positioning
-      iframe.style.top    = "auto";
-      iframe.style.left   = "auto";
-      iframe.style.right  = config.right + "px";
+      iframe.style.top = "auto";
+      iframe.style.left = "auto";
+      iframe.style.right = config.right + "px";
       iframe.style.bottom = config.bottom + "px";
-      iframe.style.width  = s.w + "px";
+      iframe.style.width = s.w + "px";
       iframe.style.height = s.h + "px";
     }
 
@@ -109,31 +113,46 @@
       // Child signals it has mounted and its message listener is ready.
       // Re-send constraints so it gets availWidth/availHeight even if the
       // iframe "load" event fired before React had registered its listener.
-      if (data.source === "rak-inc-chat-ready" && data.id === config.messageId) {
+      if (
+        data.source === "rak-inc-chat-ready" &&
+        data.id === config.messageId
+      ) {
         sendAvailHeight();
         return;
       }
 
-      if (data.source !== "rak-inc-chat" || data.id !== config.messageId) return;
+      if (data.source !== "rak-inc-chat" || data.id !== config.messageId)
+        return;
       if (typeof data.open !== "boolean") return;
 
       // Fullscreen mode (mobile open): expand iframe to cover the whole viewport.
       if (data.fullscreen === true) {
-        if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; pendingW = null; pendingH = null; }
+        if (closeTimer) {
+          clearTimeout(closeTimer);
+          closeTimer = null;
+          pendingW = null;
+          pendingH = null;
+        }
         isOpen = true;
         applyFullscreen();
         return;
       }
 
       // Dimensions are required; old-format messages without them are ignored.
-      if (typeof data.width !== "number" || typeof data.height !== "number") return;
+      if (typeof data.width !== "number" || typeof data.height !== "number")
+        return;
 
       const wasOpen = isOpen;
       isOpen = data.open;
 
       if (data.open) {
         // Opening: cancel any pending close and expand immediately.
-        if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; pendingW = null; pendingH = null; }
+        if (closeTimer) {
+          clearTimeout(closeTimer);
+          closeTimer = null;
+          pendingW = null;
+          pendingH = null;
+        }
         applySize(data.width, data.height);
       } else if (wasOpen || isFullscreen) {
         // Transitioning from open → closed: wait for the close animation,
@@ -178,10 +197,14 @@
     // the panel dimensions and avoid being cropped by the viewport.
     function sendAvailHeight() {
       if (!iframe.contentWindow) return;
-      var availHeight = window.innerHeight - config.bottom - 32; // 32px top margin
-      var availWidth  = window.innerWidth  - config.right  - 8;  // 8px left margin
+      var availHeight = window.innerHeight - config.bottom - 22; // 32px top margin
+      var availWidth = window.innerWidth - config.right - 8; // 8px left margin
       iframe.contentWindow.postMessage(
-        { source: "rak-inc-chat-host", availHeight: availHeight, availWidth: availWidth },
+        {
+          source: "rak-inc-chat-host",
+          availHeight: availHeight,
+          availWidth: availWidth,
+        },
         "*"
       );
     }

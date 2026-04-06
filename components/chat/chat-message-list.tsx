@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 type ChatMessageListProps = {
   messages: ChatMessage[];
@@ -54,6 +54,25 @@ function timeAgo(ts: number, now: number): string {
 }
 
 export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
+  const normalizedMessages = useMemo(() => {
+    const firstRealTimestamp = messages.find(
+      (m) => typeof m.sentAt === "number" && !Number.isNaN(m.sentAt),
+    )?.sentAt;
+    const baseTime =
+      firstRealTimestamp ?? Date.now() - Math.max(1, messages.length) * 60_000;
+
+    let lastSeen = baseTime;
+    return messages.map((m, i) => {
+      if (typeof m.sentAt === "number" && !Number.isNaN(m.sentAt)) {
+        lastSeen = m.sentAt;
+        return m;
+      }
+      const inferred = Math.max(lastSeen + 1000, baseTime + i * 60_000);
+      lastSeen = inferred;
+      return { ...m, sentAt: inferred };
+    });
+  }, [messages]);
+
   // Indices whose timestamp is currently visible.
   // Initialise with the last message so it shows by default.
   const [shown, setShown] = useState<Set<number>>(
@@ -84,7 +103,7 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
 
   return (
     <div className="space-y-4 pb-2">
-      {messages.map((m, i) => (
+      {normalizedMessages.map((m, i) => (
         <div
           key={`${i}-${m.role}-${m.content.slice(0, 24)}`}
           data-chat-role={m.role}
@@ -100,13 +119,13 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
             {/* Message bubble — click to toggle timestamp */}
             <button
               type="button"
-              onClick={() => m.sentAt && toggle(i)}
+              onClick={() => toggle(i)}
               className={cn(
                 "rounded-2xl border px-3.5 py-2.5 text-[14px] leading-6 text-left",
                 m.role === "user"
                   ? "rounded-br-md border-white bg-white text-black"
                   : "rounded-bl-md border-[#3a3a3a] bg-[#252525] text-white",
-                m.sentAt ? "cursor-pointer" : "cursor-default",
+                "cursor-pointer",
               )}
             >
               {m.role === "assistant" ? (
@@ -121,13 +140,13 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
             {/* Timestamp — slides in/out */}
             <div
               className={cn(
-                "overflow-hidden text-[11px] text-muted-foreground/70 transition-[max-height,opacity] duration-200 ease-in-out",
-                shown.has(i) && m.sentAt
-                  ? "max-h-5 opacity-100"
+                "overflow-hidden text-[11px] leading-4 text-muted-foreground transition-[max-height,opacity] duration-200 ease-in-out",
+                shown.has(i)
+                  ? "max-h-8 opacity-100"
                   : "max-h-0 opacity-0",
               )}
             >
-              {m.sentAt ? timeAgo(m.sentAt, now) : null}
+              {timeAgo(m.sentAt!, now)}
             </div>
           </div>
         </div>

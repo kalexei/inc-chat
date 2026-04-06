@@ -5,9 +5,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { ChevronDown, X } from "lucide-react";
 import { useLayoutEffect, useRef, useState, useEffect } from "react";
+import { useInnoviState } from "@/hooks/use-innovi-state";
 import { ChatComposer } from "./chat-composer";
 import { ChatMessageList } from "./chat-message-list";
-import { InnoviFab, type InnoviState } from "./innovi-fab";
+import { InnoviAvatar } from "./innovi-avatar";
+import { InnoviFab } from "./innovi-fab";
 
 export function ChatEmbed() {
   const chat = useSalesAgentChat();
@@ -37,57 +39,15 @@ export function ChatEmbed() {
   }, [isOpen]);
 
   // ─── Innovi state ─────────────────────────────────────────────────────────────
-  const [innoviState, setInnoviState] = useState<InnoviState>("neutral");
-  const prevTypingRef = useRef(false);
-  const speakingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    const isError = chat.sessionLabel.toLowerCase().includes("error");
-    if (isError) {
-      if (speakingTimerRef.current) {
-        clearTimeout(speakingTimerRef.current);
-        speakingTimerRef.current = null;
-      }
-      prevTypingRef.current = false;
-      setInnoviState("error");
-      return;
-    }
-
-    const isThinking = chat.typing || chat.isSending;
-    if (isThinking) {
-      if (speakingTimerRef.current) {
-        clearTimeout(speakingTimerRef.current);
-        speakingTimerRef.current = null;
-      }
-      prevTypingRef.current = true;
-      setInnoviState("thinking");
-      return;
-    }
-
-    if (prevTypingRef.current) {
-      prevTypingRef.current = false;
-      setInnoviState("speaking");
-      speakingTimerRef.current = setTimeout(() => {
-        speakingTimerRef.current = null;
-        setInnoviState(isOpenRef.current ? "happy" : "neutral");
-      }, 2500);
-      return;
-    }
-
-    if (!speakingTimerRef.current) {
-      setInnoviState(isOpen ? "happy" : "neutral");
-    }
-  }, [chat.typing, chat.isSending, chat.sessionLabel, isOpen]);
-
-  useEffect(() => {
-    return () => {
-      if (speakingTimerRef.current) clearTimeout(speakingTimerRef.current);
-    };
-  }, []);
+  const innoviState = useInnoviState({
+    typing: chat.typing,
+    isSending: chat.isSending,
+    sessionLabel: chat.sessionLabel,
+    active: isOpen,
+  });
 
   // ─── Bubble message ───────────────────────────────────────────────────────────
   const [bubbleText, setBubbleText] = useState<string | null>(null);
-  const [bubbleDismissed, setBubbleDismissed] = useState(false);
   const hasOpenedRef = useRef(false);
   const chatMessagesRef = useRef(chat.messages);
   useEffect(() => {
@@ -96,9 +56,9 @@ export function ChatEmbed() {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      if (!hasOpenedRef.current && !bubbleDismissed) {
+      if (!hasOpenedRef.current) {
         setBubbleText(
-          "Hi! I'm Innovi 👋 — ask me anything about Innovation City.",
+          "Hi! I'm Innovi 👋 — ask me anything about Innovation City."
         );
       }
     }, 2500);
@@ -110,7 +70,7 @@ export function ChatEmbed() {
     if (isOpen) {
       hasOpenedRef.current = true;
       setBubbleText(null);
-    } else if (hasOpenedRef.current && !bubbleDismissed) {
+    } else if (hasOpenedRef.current) {
       const lastAsst = [...chatMessagesRef.current]
         .reverse()
         .find((m) => m.role === "assistant");
@@ -123,7 +83,16 @@ export function ChatEmbed() {
         setBubbleText(plain.slice(0, 72) + (plain.length > 72 ? "…" : ""));
       }
     }
-  }, [isOpen, bubbleDismissed]);
+  }, [isOpen]);
+
+  // Auto-hide the speech bubble after a few seconds for cleaner UX.
+  useEffect(() => {
+    if (!bubbleText || isOpen) return;
+    const t = window.setTimeout(() => {
+      setBubbleText(null);
+    }, 4500);
+    return () => window.clearTimeout(t);
+  }, [bubbleText, isOpen]);
 
   // ─── Background transparency ──────────────────────────────────────────────────
   const skipRestoreOnceRef = useRef(true);
@@ -140,12 +109,12 @@ export function ChatEmbed() {
     document.documentElement.style.setProperty(
       "background-color",
       "transparent",
-      "important",
+      "important"
     );
     document.body.style.setProperty(
       "background-color",
       "transparent",
-      "important",
+      "important"
     );
     document.documentElement.style.backgroundImage = "none";
     document.body.style.backgroundImage = "none";
@@ -171,7 +140,8 @@ export function ChatEmbed() {
         | { source?: string; availHeight?: number; availWidth?: number }
         | undefined;
       if (data?.source !== "rak-inc-chat-host") return;
-      if (typeof data.availHeight === "number") setAvailHeight(data.availHeight);
+      if (typeof data.availHeight === "number")
+        setAvailHeight(data.availHeight);
       if (typeof data.availWidth === "number") setAvailWidth(data.availWidth);
     };
     window.addEventListener("message", handler);
@@ -180,7 +150,7 @@ export function ChatEmbed() {
     // iframe "load" event fired before our message listener was registered.
     window.parent?.postMessage(
       { source: "rak-inc-chat-ready", id: embedId },
-      "*",
+      "*"
     );
 
     return () => window.removeEventListener("message", handler);
@@ -189,7 +159,7 @@ export function ChatEmbed() {
   useEffect(() => {
     const t = window.setTimeout(
       () => setShouldRenderPanel(isOpen),
-      isOpen ? 0 : 260,
+      isOpen ? 0 : 260
     );
     return () => window.clearTimeout(t);
   }, [isOpen]);
@@ -222,7 +192,7 @@ export function ChatEmbed() {
           width: Math.ceil(width),
           height: Math.ceil(height),
         },
-        "*",
+        "*"
       );
     });
 
@@ -233,7 +203,7 @@ export function ChatEmbed() {
   // Also send immediately on state changes so the parent knows open/close intent
   // before the ResizeObserver fires (important for the close animation delay).
   useEffect(() => {
-    const hasBubble = !isOpen && !bubbleDismissed && Boolean(bubbleText);
+    const hasBubble = !isOpen && Boolean(bubbleText);
     hasBubbleRef.current = hasBubble;
     const fullscreen = isMobile && isOpen;
     isFullscreenRef.current = fullscreen;
@@ -251,9 +221,9 @@ export function ChatEmbed() {
           ? { width: Math.ceil(rect.width), height: Math.ceil(rect.height) }
           : {}),
       },
-      "*",
+      "*"
     );
-  }, [isOpen, isMobile, bubbleText, bubbleDismissed, embedId]);
+  }, [isOpen, isMobile, bubbleText, embedId]);
 
   // ─── Scroll helpers ───────────────────────────────────────────────────────────
   const scrollTypingRef = useRef(false);
@@ -264,7 +234,7 @@ export function ChatEmbed() {
   useEffect(() => {
     if (!isOpen || !chat.hasMessages) return;
     const viewport = scrollAreaRef.current?.querySelector<HTMLDivElement>(
-      '[data-slot="scroll-area-viewport"]',
+      '[data-slot="scroll-area-viewport"]'
     );
     if (!viewport) return;
 
@@ -278,7 +248,7 @@ export function ChatEmbed() {
         // rAF ensures this runs after React has painted the final message.
         requestAnimationFrame(() => {
           const els = viewport.querySelectorAll<HTMLElement>(
-            '[data-chat-role="assistant"]',
+            '[data-chat-role="assistant"]'
           );
           const last = els[els.length - 1];
           if (!last) return;
@@ -306,7 +276,7 @@ export function ChatEmbed() {
       return;
     }
     const viewport = scrollAreaRef.current?.querySelector<HTMLDivElement>(
-      '[data-slot="scroll-area-viewport"]',
+      '[data-slot="scroll-area-viewport"]'
     );
     if (!viewport) return;
 
@@ -325,7 +295,7 @@ export function ChatEmbed() {
 
   function scrollToLatest() {
     const viewport = scrollAreaRef.current?.querySelector<HTMLDivElement>(
-      '[data-slot="scroll-area-viewport"]',
+      '[data-slot="scroll-area-viewport"]'
     );
     if (!viewport) return;
     viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
@@ -339,18 +309,8 @@ export function ChatEmbed() {
 
       {/*
        * Single fixed wrapper anchored to bottom-right corner.
-       *
-       * Layout:
-       *   [chat panel]   ← appears above when open
-       *   [bubble] [FAB] ← always visible at bottom
-       *
-       * Padding breakdown:
-       *   pt-5 / pl-5 = 20px  → shadow buffer (shadow goes up-left)
-       *   pb-2 / pr-2 =  8px  → visual margin from page edge
-       *
-       * The wrapper's rendered size is observed by ResizeObserver and sent
-       * to the parent via postMessage — the parent sets the iframe to those
-       * exact dimensions automatically.
+       * Keep padding minimal so iframe size tightly matches visible UI and
+       * does not overlap surrounding host-page elements.
        */}
       <div
         ref={wrapperRef}
@@ -359,7 +319,8 @@ export function ChatEmbed() {
           // Mobile + open: full-screen overlay; otherwise bottom-right corner widget
           isMobile && isOpen
             ? "inset-0 items-stretch"
-            : "bottom-0 right-0 items-end gap-3 py-6 px-3",
+            : "bottom-0 right-0 items-end gap-2 px-2 pb-2 pt-2",
+          !isMobile && isOpen && "pt-3 pr-2.5"
         )}
       >
         {/* Chat panel — rendered while open (and for 260ms during close animation) */}
@@ -377,49 +338,60 @@ export function ChatEmbed() {
                 : "origin-bottom-right transition-[opacity,transform,filter] duration-350 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
               isOpen
                 ? "pointer-events-auto translate-y-0 scale-100 opacity-100 blur-0"
-                : "pointer-events-none translate-y-6 scale-[0.94] opacity-0 blur-[2px]",
+                : "pointer-events-none translate-y-6 scale-[0.94] opacity-0 blur-[2px]"
             )}
           >
-            {/* X badge — half outside the top-right corner (desktop) or inside top-right (mobile) */}
-            <button
-              type="button"
-              aria-label="Close chat"
-              onClick={() => setIsOpen(false)}
-              className={cn(
-                "absolute z-10 grid size-6 place-items-center rounded-full bg-card ring-1 ring-border/70 text-muted-foreground transition-colors hover:text-foreground",
-                isMobile ? "top-2 right-2" : "-top-2.5 -right-2.5",
-              )}
-            >
-              <X className="size-3.5" />
-            </button>
+            {/* X badge — desktop only: half outside the top-right corner */}
+            {!isMobile && (
+              <button
+                type="button"
+                aria-label="Close chat"
+                onClick={() => setIsOpen(false)}
+                className="absolute -top-2.5 -right-2.5 z-10 grid size-6 place-items-center rounded-full bg-card ring-1 ring-border/70 text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
 
             <section
               className={cn(
-                "flex min-w-0 flex-col overflow-hidden border border-border/70 bg-card/95",
-                isMobile ? "flex-1 min-h-0 w-full rounded-none" : "rounded-2xl",
+                "flex min-w-0 flex-col overflow-hidden border border-border/70 bg-card",
+                isMobile ? "flex-1 min-h-0 w-full rounded-none" : "rounded-2xl"
               )}
               style={
                 isMobile
                   ? undefined
                   : {
-                      // px-3 wrapper (6px×2=12px) constrains the panel. Fall back to 420px if no parent.
-                      width: `min(420px, ${availWidth ? Math.max(260, availWidth - 48) : 420}px)`,
-                      // wrapper padding + gap + FAB row (~140px overhead).
-                      // Cap at 48rem (768px). Fall back to 720px if no parent frame.
-                      height: `min(48rem, ${availHeight ? Math.max(300, availHeight - 140) : 720}px)`,
+                      width: `min(420px, ${
+                        availWidth ? Math.max(260, availWidth - 48) : 420
+                      }px)`,
+                      height: `min(48rem, ${
+                        availHeight ? Math.max(300, availHeight - 140) : 720
+                      }px)`,
                     }
               }
               aria-label="Embedded sales assistant chat"
             >
-              <header className="flex items-center gap-3 border-b border-border/70 bg-background/85 px-4 py-3 backdrop-blur">
-                <div className="min-w-0">
+              <header className="flex items-center gap-3 border-b border-border/70 bg-background px-4 py-3">
+                {isMobile && <InnoviAvatar state={innoviState} size={32} />}
+                <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-foreground">
                     Innovi
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    If it exists in Innovation City, I know about it.
+                    Let me help you navigate Innovation City.
                   </p>
                 </div>
+                {isMobile && (
+                  <button
+                    type="button"
+                    aria-label="Close chat"
+                    onClick={() => setIsOpen(false)}
+                    className="grid size-9 shrink-0 place-items-center rounded-full bg-muted/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95"
+                  >
+                    <X className="size-5" />
+                  </button>
+                )}
               </header>
 
               <ScrollArea
@@ -438,18 +410,18 @@ export function ChatEmbed() {
                 aria-label="Jump to latest message"
                 className={cn(
                   "absolute left-1/2 z-20 -translate-x-1/2 rounded-full border border-border/70",
-                  "bg-background/95 p-2 text-muted-foreground shadow-lg shadow-black/35 backdrop-blur",
+                  "bg-background p-2 text-muted-foreground shadow-lg shadow-black/35",
                   "transition-all duration-250 ease-out",
                   "bottom-24",
                   showJumpToLatest
                     ? "pointer-events-auto translate-y-0 opacity-100"
-                    : "pointer-events-none translate-y-2 opacity-0",
+                    : "pointer-events-none translate-y-2 opacity-0"
                 )}
               >
                 <ChevronDown className="size-4" />
               </button>
 
-              <div className="shrink-0 space-y-3 border-t border-border/70 bg-background/75 p-3 backdrop-blur">
+              <div className="shrink-0 space-y-3 border-t border-border/70 bg-background p-3">
                 <ChatComposer
                   textareaRef={textareaRef}
                   inputEnabled={chat.inputEnabled}
@@ -463,21 +435,17 @@ export function ChatEmbed() {
           </div>
         ) : null}
 
-        {/* FAB row — bubble (collapses when hidden) + Innovi button */}
-        <div className={cn(
-          "shrink-0 flex items-center gap-3",
-          isMobile && isOpen
-            ? "self-end px-3 pb-6 pt-2" // mobile full-screen: own padding at bottom-right
-            : "py-2",                    // desktop: wrapper supplies the outer padding
-        )}>
-          <InnoviFab
-            state={innoviState}
-            isOpen={isOpen}
-            bubble={bubbleDismissed ? null : bubbleText}
-            onToggle={() => setIsOpen((v) => !v)}
-            onDismissBubble={() => setBubbleDismissed(true)}
-          />
-        </div>
+        {/* FAB row — hidden on mobile when panel is open so chat fills the screen */}
+        {!(isMobile && isOpen) && (
+          <div className="shrink-0 flex items-center gap-3 py-2">
+            <InnoviFab
+              state={innoviState}
+              isOpen={isOpen}
+              bubble={bubbleText}
+              onToggle={() => setIsOpen((v) => !v)}
+            />
+          </div>
+        )}
       </div>
     </>
   );

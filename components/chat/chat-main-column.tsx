@@ -7,7 +7,9 @@ import { useEffect, useRef, type RefObject } from "react";
 import { ChatComposer } from "./chat-composer";
 import { ChatMessageList } from "./chat-message-list";
 import { ChatQuickCards } from "./chat-quick-cards";
+import { InnoviAvatar } from "./innovi-avatar";
 import { cn } from "@/lib/utils";
+import type { InnoviState } from "./innovi-fab";
 
 type ChatMainColumnProps = {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
@@ -18,6 +20,7 @@ type ChatMainColumnProps = {
   typing: boolean;
   inputEnabled: boolean;
   isSending: boolean;
+  innoviState: InnoviState;
   onSend: () => void;
   onNewSession: () => void;
   onAutoResize: () => void;
@@ -33,6 +36,7 @@ export function ChatMainColumn({
   typing,
   inputEnabled,
   isSending,
+  innoviState,
   onSend,
   onNewSession,
   onAutoResize,
@@ -53,11 +57,15 @@ export function ChatMainColumn({
     <div className="relative order-2 flex min-h-0 min-w-0 flex-1 flex-col bg-background">
       <header className="flex h-12 shrink-0 items-center gap-2 border-b px-2 md:px-3">
         <SidebarTrigger className="md:flex" />
+        <div className="flex items-center gap-2">
+          <InnoviAvatar state={innoviState} size={28} />
+          <span className="text-sm font-semibold text-foreground">Innovi</span>
+        </div>
       </header>
-      <div className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-4 md:px-8">
+      <div className="flex min-h-0 flex-1 flex-col px-2 pb-2 pt-2 md:px-8 md:pb-4 md:pt-4">
         <div
           className={cn(
-            "mx-auto flex w-full max-w-3xl flex-col items-center gap-6 py-8 transition-opacity duration-200",
+            "mx-auto flex w-full max-w-3xl flex-col items-center gap-4 py-4 transition-opacity duration-200 md:gap-6 md:py-8",
             hasMessages &&
               "pointer-events-none h-0 overflow-hidden py-0 opacity-0"
           )}
@@ -90,7 +98,7 @@ export function ChatMainColumn({
           </div>
         </ScrollArea>
 
-        <div className="mx-auto mt-4 w-full max-w-3xl shrink-0 space-y-4">
+        <div className="mx-auto mt-2 w-full max-w-3xl shrink-0 space-y-3 md:mt-4 md:space-y-4">
           <ChatComposer
             textareaRef={textareaRef}
             inputEnabled={inputEnabled}

@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const SALES_AGENT_ORIGIN =
-  "https://proc-sales-agent-impl-7a2j52.2ky31l-1.deu-c1.eu1.cloudhub.io";
+  "https://proc-sales-agent-impl-5eeid8.internal-5i32o8.deu-c1.eu1.cloudhub.io";
 
 const nextConfig: NextConfig = {
   async rewrites() {

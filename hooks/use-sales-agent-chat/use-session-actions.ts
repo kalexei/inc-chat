@@ -15,9 +15,9 @@ import type { ChatState } from "./use-chat-state";
 import type { GreetingState } from "./use-greeting";
 import type { SessionStore } from "../use-session-store";
 import { useCallback } from "react";
-
+// Hi, I’m Sky — your Innovation City guide. How can I help?
 const DEFAULT_GREETING =
-  "Hi there \u{1F44B}\nYou are now speaking with Sky. How can I help?";
+  "Hi, I’m Sky — your Innovation City guide. How can I help?";
 
 export function useSessionActions(
   state: ChatState,

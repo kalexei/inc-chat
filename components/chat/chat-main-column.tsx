@@ -47,7 +47,7 @@ export function ChatMainColumn({
   useEffect(() => {
     if (!hasMessages) return;
     const viewport = scrollAreaRef.current?.querySelector<HTMLDivElement>(
-      '[data-slot="scroll-area-viewport"]'
+      '[data-slot="scroll-area-viewport"]',
     );
     if (!viewport) return;
     viewport.scrollTop = viewport.scrollHeight;
@@ -58,7 +58,7 @@ export function ChatMainColumn({
       <header className="flex h-12 shrink-0 items-center gap-2 border-b px-2 md:px-3">
         <SidebarTrigger className="md:flex" />
         <div className="flex items-center gap-2">
-          <InnoviAvatar state={innoviState} size={28} />
+          {/* <InnoviAvatar state={innoviState} size={28} /> */}
           <span className="text-sm font-semibold text-foreground">Innovi</span>
         </div>
       </header>
@@ -67,14 +67,14 @@ export function ChatMainColumn({
           className={cn(
             "mx-auto flex w-full max-w-3xl flex-col items-center gap-4 py-4 transition-opacity duration-200 md:gap-6 md:py-8",
             hasMessages &&
-              "pointer-events-none h-0 overflow-hidden py-0 opacity-0"
+              "pointer-events-none h-0 overflow-hidden py-0 opacity-0",
           )}
           aria-hidden={hasMessages}
         >
           <div
             className={cn(
               "size-24 rounded-full bg-linear-to-br from-primary/90 via-primary/40 to-accent/80",
-              "blur-0 shadow-[0_0_60px_-12px_var(--color-primary)]"
+              "blur-0 shadow-[0_0_60px_-12px_var(--color-primary)]",
             )}
             aria-hidden
           />
@@ -90,7 +90,7 @@ export function ChatMainColumn({
           ref={scrollAreaRef}
           className={cn(
             "mx-auto w-full max-w-3xl",
-            hasMessages ? "min-h-0 flex-1" : "flex-1"
+            hasMessages ? "min-h-0 flex-1" : "flex-1",
           )}
         >
           <div className="pr-3">

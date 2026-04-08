@@ -36,7 +36,6 @@ Deploy this project so `/embed` is publicly accessible:
 
 - Example: `https://chat.example.com/embed`
 - Ensure your backend API is reachable by this deployed app (`SALES_AGENT_API_ORIGIN` or `NEXT_PUBLIC_API_BASE_URL`).
-- If using Cognito in production, configure callback URLs for your deployed domain(s).
 
 ## Step 2 - Use the Ready-Made Loader Script
 

@@ -21,7 +21,5 @@ This is **inc-chat**, a Next.js 16 chat-based sales agent frontend for RAK free 
 
 - **No backend in this repo.** The chat input is disabled until a session is created via the backend API. UI-only changes can be tested without it; chat flow changes require a running backend.
 - **No `.env` files are committed.** To configure the backend proxy, set `SALES_AGENT_API_ORIGIN=http://<host>:<port>` before starting the dev server. Alternatively, set `NEXT_PUBLIC_API_BASE_URL` for direct browser-to-API calls.
-- **AWS Cognito auth is optional.** Omit all `NEXT_PUBLIC_COGNITO_*` env vars to run without authentication. When enabled, unauthenticated users are redirected from `/` to `/signin`. The flow uses OAuth2 Authorization Code + PKCE via Cognito's hosted UI. The callback page at `/auth/callback` exchanges the code for tokens and stores them in `sessionStorage`.
-- **Cognito env vars:** `NEXT_PUBLIC_COGNITO_DOMAIN` (bare domain or full URL — the code strips `https://`) and `NEXT_PUBLIC_COGNITO_CLIENT_ID`. The redirect URI defaults to `{origin}/auth/callback`. For the sign-in flow to work, `http://localhost:3000/auth/callback` must be listed in the Cognito User Pool app client's "Allowed callback URLs" in the AWS Console.
 - **Node.js 22** is the runtime. No `.nvmrc` or `.node-version` file exists; the repo relies on whatever Node is available (v22+ recommended).
 - **npm** is the package manager (lockfile: `package-lock.json`).

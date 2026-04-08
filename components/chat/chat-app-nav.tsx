@@ -14,13 +14,12 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import type { StoredSession } from "@/lib/chat-types";
-import { LogOut, Plus, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { SessionList } from "./session-list";
 import Image from "next/image";
 
 type ChatAppNavProps = {
   initials: string;
-  showSignOut: boolean;
   showSearch: boolean;
   sessionSearch: string;
   filteredSessions: StoredSession[];
@@ -31,12 +30,10 @@ type ChatAppNavProps = {
   onSessionSearchChange: (value: string) => void;
   onSelectSession: (id: string) => void;
   onDeleteSession: (id: string, e: React.MouseEvent) => void;
-  onSignOut: () => void;
 };
 
 export function ChatAppNav({
   initials,
-  showSignOut,
   showSearch,
   sessionSearch,
   filteredSessions,
@@ -47,7 +44,6 @@ export function ChatAppNav({
   onSessionSearchChange,
   onSelectSession,
   onDeleteSession,
-  onSignOut,
 }: ChatAppNavProps) {
   return (
     <Sidebar collapsible="icon" variant="sidebar" className="border-r-0">
@@ -129,18 +125,6 @@ export function ChatAppNav({
       </SidebarContent>
       <SidebarFooter className="gap-2">
         <SidebarMenu>
-          {showSignOut ? (
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                tooltip="Sign out"
-                className="text-muted-foreground hover:text-destructive"
-                onClick={() => onSignOut()}
-              >
-                <LogOut />
-                <span>Sign out</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ) : null}
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="pointer-events-none">
               <Avatar size="sm" className="size-8">

@@ -20,7 +20,6 @@ export function ChatApp() {
     <SidebarProvider defaultOpen className="h-dvh min-h-0">
       <ChatAppNav
         initials={chat.initials}
-        showSignOut={chat.showSignOut}
         showSearch={chat.showSearch}
         sessionSearch={chat.sessionSearch}
         filteredSessions={chat.filteredSessions}
@@ -31,7 +30,6 @@ export function ChatApp() {
         onSessionSearchChange={chat.setSessionSearch}
         onSelectSession={(id) => void chat.loadSession(id)}
         onDeleteSession={(id, e) => void chat.deleteSession(id, e)}
-        onSignOut={chat.signOut}
       />
       <SidebarInset
         className="flex min-h-0 flex-1 flex-row overflow-hidden p-0"

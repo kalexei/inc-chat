@@ -127,7 +127,18 @@ export function useSessionActions(
         const stored = loadStoredSessions().find((s) => s.id === id);
         const anchorMs =
           stored?.createdAt ?? Date.now() - Math.max(1, msgs.length) * 60_000;
-        setMessages(ensureMessageSentAt(msgs, anchorMs));
+        const normalized = ensureMessageSentAt(msgs, anchorMs);
+        setMessages(
+          normalized.length > 0
+            ? normalized
+            : [
+                {
+                  role: "assistant",
+                  content: greeting.cachedGreeting || DEFAULT_GREETING,
+                  sentAt: Date.now(),
+                },
+              ],
+        );
 
         const merged = {
           ...(data.leadData || {}),
@@ -154,6 +165,7 @@ export function useSessionActions(
     [
       isSending, log, store, updateSlots, updateRaw,
       sessionIdRef, setMessages, setSessionId, setSessionLabel, setInputEnabled,
+      greeting.cachedGreeting,
     ],
   );
 

@@ -140,7 +140,7 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
           >
             {m.role === "assistant" && (
               <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Innovation City Help (Sky)
+                Sky
               </div>
             )}
 

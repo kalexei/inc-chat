@@ -103,9 +103,7 @@ export function ChatEmbed() {
             <section
               className={cn(
                 "flex min-w-0 flex-col overflow-hidden border border-border/70 bg-card",
-                isMobile
-                  ? "flex-1 min-h-0 w-full rounded-none"
-                  : "rounded-2xl",
+                isMobile ? "flex-1 min-h-0 w-full rounded-none" : "rounded-2xl",
               )}
               style={
                 isMobile
@@ -124,7 +122,7 @@ export function ChatEmbed() {
                     Innovation City Help (Sky)
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Let me help you navigate Innovation City.
+                    Your Innovation City assistant.
                   </p>
                 </div>
                 {isMobile && (

@@ -85,16 +85,22 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
     const baseTime =
       firstRealTimestamp ?? now - Math.max(1, messages.length) * 60_000;
 
-    let lastSeen = baseTime;
-    return messages.map((m, i) => {
-      if (typeof m.sentAt === "number" && !Number.isNaN(m.sentAt)) {
-        lastSeen = m.sentAt;
-        return m;
-      }
-      const inferred = Math.max(lastSeen + 1000, baseTime + i * 60_000);
-      lastSeen = inferred;
-      return { ...m, sentAt: inferred };
-    });
+    return messages.reduce<ChatMessage[]>(
+      (acc, m, i) => {
+        const hasTimestamp =
+          typeof m.sentAt === "number" && !Number.isNaN(m.sentAt);
+        if (hasTimestamp) return [...acc, m];
+
+        const prev = acc[acc.length - 1];
+        const prevTs =
+          typeof prev?.sentAt === "number" && !Number.isNaN(prev.sentAt)
+            ? prev.sentAt
+            : baseTime;
+        const inferred = Math.max(prevTs + 1000, baseTime + i * 60_000);
+        return [...acc, { ...m, sentAt: inferred }];
+      },
+      [],
+    );
   }, [messages, now]);
 
   // Indices whose timestamp is currently visible.
@@ -112,7 +118,10 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
   // Always show the timestamp for the newest message automatically.
   useEffect(() => {
     if (messages.length === 0) return;
-    setShown((prev) => new Set([...prev, messages.length - 1]));
+    const t = window.setTimeout(() => {
+      setShown((prev) => new Set([...prev, messages.length - 1]));
+    }, 0);
+    return () => window.clearTimeout(t);
   }, [messages.length]);
 
   const toggle = (i: number) => {

@@ -112,7 +112,7 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
           <div className={cn("flex min-w-0 max-w-[min(100%,42rem)] flex-col gap-1.5", m.role === "user" && "items-end")}>
             {m.role === "assistant" && (
               <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Innovi
+                Innovation City Help (Sky)
               </div>
             )}
 
@@ -156,7 +156,7 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
         <div className="flex">
           <div className="flex min-w-0 flex-col gap-1">
             <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Innovi
+              Innovation City Help (Sky)
             </div>
             <div className="max-w-[min(100%,42rem)] rounded-2xl rounded-bl-md border border-[#3a3a3a] bg-[#252525] px-3.5 py-2.5 text-[14px] leading-6 text-white/85">
               Agent is thinking…

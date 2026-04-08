@@ -59,7 +59,9 @@ export function ChatMainColumn({
         <SidebarTrigger className="md:flex" />
         <div className="flex items-center gap-2">
           {/* <InnoviAvatar state={innoviState} size={28} /> */}
-          <span className="text-sm font-semibold text-foreground">Innovi</span>
+          <span className="text-sm font-semibold text-foreground">
+            Innovation City Help (Sky)
+          </span>
         </div>
       </header>
       <div className="flex min-h-0 flex-1 flex-col px-2 pb-2 pt-2 md:px-8 md:pb-4 md:pt-4">

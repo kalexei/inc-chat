@@ -17,7 +17,7 @@ import type { SessionStore } from "../use-session-store";
 import { useCallback } from "react";
 
 const DEFAULT_GREETING =
-  "Hi there \u{1F44B}\nYou are now speaking with Innovi. How can I help?";
+  "Hi there \u{1F44B}\nYou are now speaking with Sky. How can I help?";
 
 export function useSessionActions(
   state: ChatState,
@@ -101,9 +101,18 @@ export function useSessionActions(
       return false;
     }
   }, [
-    isSending, greeting.cachedGreeting, log, store,
-    resetState, setSessionAndStore, sessionIdRef,
-    setIsSending, setInputEnabled, setSessionId, setSessionLabel, setMessages,
+    isSending,
+    greeting.cachedGreeting,
+    log,
+    store,
+    resetState,
+    setSessionAndStore,
+    sessionIdRef,
+    setIsSending,
+    setInputEnabled,
+    setSessionId,
+    setSessionLabel,
+    setMessages,
   ]);
 
   const loadSession = useCallback(
@@ -145,8 +154,7 @@ export function useSessionActions(
           ...(data.dynamicData || {}),
         };
         const submitted = Boolean(
-          (data.chatMetadata as { submitted?: boolean } | undefined)
-            ?.submitted,
+          (data.chatMetadata as { submitted?: boolean } | undefined)?.submitted,
         );
         updateSlots(merged, submitted);
         updateRaw(
@@ -163,8 +171,16 @@ export function useSessionActions(
       }
     },
     [
-      isSending, log, store, updateSlots, updateRaw,
-      sessionIdRef, setMessages, setSessionId, setSessionLabel, setInputEnabled,
+      isSending,
+      log,
+      store,
+      updateSlots,
+      updateRaw,
+      sessionIdRef,
+      setMessages,
+      setSessionId,
+      setSessionLabel,
+      setInputEnabled,
       greeting.cachedGreeting,
     ],
   );
@@ -188,8 +204,14 @@ export function useSessionActions(
       }
     },
     [
-      sessionId, log, store, resetState,
-      sessionIdRef, setSessionId, setSessionLabel, setInputEnabled,
+      sessionId,
+      log,
+      store,
+      resetState,
+      sessionIdRef,
+      setSessionId,
+      setSessionLabel,
+      setInputEnabled,
     ],
   );
 

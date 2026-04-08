@@ -121,7 +121,7 @@ export function ChatEmbed() {
                 {isMobile && <InnoviAvatar state={innoviState} size={32} />}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-foreground">
-                    Innovi
+                    Innovation City Help (Sky)
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Let me help you navigate Innovation City.

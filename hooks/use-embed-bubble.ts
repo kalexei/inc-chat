@@ -24,7 +24,7 @@ export function useEmbedBubble(isOpen: boolean, messages: ChatMessage[]) {
     const t = setTimeout(() => {
       if (!hasOpenedRef.current)
         setBubbleText(
-          "Hi! I\u2019m Innovi \u{1F44B} \u2014 ask me anything about Innovation City.",
+          "Hi! I\u2019m Sky \u{1F44B} \u2014 ask me anything about Innovation City.",
         );
     }, 2500);
     return () => clearTimeout(t);
@@ -33,7 +33,8 @@ export function useEmbedBubble(isOpen: boolean, messages: ChatMessage[]) {
   useEffect(() => {
     if (isOpen) {
       hasOpenedRef.current = true;
-      setBubbleText(null);
+      const t = window.setTimeout(() => setBubbleText(null), 0);
+      return () => window.clearTimeout(t);
     } else if (hasOpenedRef.current) {
       const lastAsst = [...messagesRef.current]
         .reverse()
@@ -44,7 +45,9 @@ export function useEmbedBubble(isOpen: boolean, messages: ChatMessage[]) {
           .replace(/[*#`_~[\]]/g, "")
           .replace(/\s+/g, " ")
           .trim();
-        setBubbleText(plain.slice(0, 72) + (plain.length > 72 ? "\u2026" : ""));
+        const preview = plain.slice(0, 72) + (plain.length > 72 ? "\u2026" : "");
+        const t = window.setTimeout(() => setBubbleText(preview), 0);
+        return () => window.clearTimeout(t);
       }
     }
   }, [isOpen]);

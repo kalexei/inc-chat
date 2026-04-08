@@ -11,7 +11,11 @@ import { useEffect, useRef, useState } from "react";
  * - After closing, shows a truncated preview of the last assistant message.
  * - Auto-hides the bubble after 4.5 s for cleaner UX.
  */
-export function useEmbedBubble(isOpen: boolean, messages: ChatMessage[]) {
+export function useEmbedBubble(
+  isOpen: boolean,
+  messages: ChatMessage[],
+  initialText?: string | null,
+) {
   const [bubbleText, setBubbleText] = useState<string | null>(null);
   const hasOpenedRef = useRef(false);
   const messagesRef = useRef(messages);
@@ -24,11 +28,12 @@ export function useEmbedBubble(isOpen: boolean, messages: ChatMessage[]) {
     const t = setTimeout(() => {
       if (!hasOpenedRef.current)
         setBubbleText(
-          "Hi! I\u2019m Sky \u{1F44B} \u2014 ask me anything about Innovation City.",
+          initialText ||
+            "Hi! I\u2019m Sky \u{1F44B} \u2014 ask me anything about Innovation City.",
         );
     }, 2500);
     return () => clearTimeout(t);
-  }, []);
+  }, [initialText]);
 
   useEffect(() => {
     if (isOpen) {
@@ -45,7 +50,8 @@ export function useEmbedBubble(isOpen: boolean, messages: ChatMessage[]) {
           .replace(/[*#`_~[\]]/g, "")
           .replace(/\s+/g, " ")
           .trim();
-        const preview = plain.slice(0, 72) + (plain.length > 72 ? "\u2026" : "");
+        const preview =
+          plain.slice(0, 72) + (plain.length > 72 ? "\u2026" : "");
         const t = window.setTimeout(() => setBubbleText(preview), 0);
         return () => window.clearTimeout(t);
       }

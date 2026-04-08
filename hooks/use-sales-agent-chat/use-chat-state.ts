@@ -58,6 +58,12 @@ export function useChatState() {
     updateRaw({}, {}, {});
   }, [updateSlots, updateRaw]);
 
+  const markAutoCreated = useCallback(() => {
+    didAutoCreateRef.current = true;
+  }, []);
+
+  const hasAutoCreated = useCallback(() => didAutoCreateRef.current, []);
+
   const autoResize = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -68,7 +74,8 @@ export function useChatState() {
   return {
     textareaRef,
     sessionIdRef,
-    didAutoCreateRef,
+    markAutoCreated,
+    hasAutoCreated,
     messages,
     setMessages,
     typing,

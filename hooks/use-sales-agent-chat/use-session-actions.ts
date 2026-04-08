@@ -11,13 +11,18 @@ import {
   deleteSessionApi,
   fetchSession,
 } from "@/lib/api/sales-agent";
+import type { ChatMessage } from "@/lib/chat-types";
 import type { ChatState } from "./use-chat-state";
 import type { GreetingState } from "./use-greeting";
 import type { SessionStore } from "../use-session-store";
-import { useCallback } from "react";
-// Hi, I’m Sky — your Innovation City guide. How can I help?
-const DEFAULT_GREETING =
-  "Hi, I’m Sky — your Innovation City guide. How can I help?";
+import { useCallback, useEffect, useRef } from "react";
+
+export const FALLBACK_GREETING =
+  "Hi! I\u2019m Sky \u{1F44B} \u2014 ask me anything about Innovation City.";
+
+function makeGreetingMsg(text: string): ChatMessage[] {
+  return [{ role: "assistant", content: text, sentAt: Date.now() }];
+}
 
 export function useSessionActions(
   state: ChatState,
@@ -38,6 +43,15 @@ export function useSessionActions(
     updateSlots,
     updateRaw,
   } = state;
+
+  const greetingRef = useRef(greeting.cachedGreeting);
+  useEffect(() => {
+    greetingRef.current = greeting.cachedGreeting;
+  }, [greeting.cachedGreeting]);
+
+  const seedGreeting = useCallback(() => {
+    setMessages(makeGreetingMsg(greetingRef.current || FALLBACK_GREETING));
+  }, [setMessages]);
 
   const setSessionAndStore = useCallback(
     (id: string, firstUserMessage?: string, isNew?: boolean) => {
@@ -85,13 +99,7 @@ export function useSessionActions(
       setSessionAndStore(sid, "", true);
       setInputEnabled(true);
       log(`Session created: ${sid}`, "log-success");
-      setMessages([
-        {
-          role: "assistant",
-          content: greeting.cachedGreeting || DEFAULT_GREETING,
-          sentAt: Date.now(),
-        },
-      ]);
+      seedGreeting();
       setIsSending(false);
       return true;
     } catch (e) {
@@ -102,7 +110,7 @@ export function useSessionActions(
     }
   }, [
     isSending,
-    greeting.cachedGreeting,
+    seedGreeting,
     log,
     store,
     resetState,
@@ -112,7 +120,6 @@ export function useSessionActions(
     setInputEnabled,
     setSessionId,
     setSessionLabel,
-    setMessages,
   ]);
 
   const loadSession = useCallback(
@@ -137,17 +144,11 @@ export function useSessionActions(
         const anchorMs =
           stored?.createdAt ?? Date.now() - Math.max(1, msgs.length) * 60_000;
         const normalized = ensureMessageSentAt(msgs, anchorMs);
-        setMessages(
-          normalized.length > 0
-            ? normalized
-            : [
-                {
-                  role: "assistant",
-                  content: greeting.cachedGreeting || DEFAULT_GREETING,
-                  sentAt: Date.now(),
-                },
-              ],
-        );
+        if (normalized.length > 0) {
+          setMessages(normalized);
+        } else {
+          seedGreeting();
+        }
 
         const merged = {
           ...(data.leadData || {}),
@@ -181,7 +182,7 @@ export function useSessionActions(
       setSessionId,
       setSessionLabel,
       setInputEnabled,
-      greeting.cachedGreeting,
+      seedGreeting,
     ],
   );
 

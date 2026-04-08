@@ -4,7 +4,7 @@ import { loadStoredSessions } from "@/lib/chat/sessions";
 import { useSessionStore } from "../use-session-store";
 import { useChatState } from "./use-chat-state";
 import { useGreeting } from "./use-greeting";
-import { useSessionActions } from "./use-session-actions";
+import { FALLBACK_GREETING, useSessionActions } from "./use-session-actions";
 import { useChatActions } from "./use-chat-actions";
 import { useEffect } from "react";
 
@@ -16,9 +16,9 @@ export function useSalesAgentChat() {
   const chat = useChatActions(state, greeting, sessions);
 
   useEffect(() => {
-    if (state.didAutoCreateRef.current) return;
+    if (state.hasAutoCreated()) return;
     if (state.inputEnabled) return;
-    state.didAutoCreateRef.current = true;
+    state.markAutoCreated();
     void (async () => {
       await Promise.resolve();
       const stored = loadStoredSessions();
@@ -31,9 +31,26 @@ export function useSalesAgentChat() {
     })();
   }, [state.inputEnabled, sessions.loadSession, sessions.newSession, state]);
 
+  useEffect(() => {
+    if (
+      greeting.cachedGreeting &&
+      state.messages.length === 1 &&
+      state.messages[0]?.content === FALLBACK_GREETING
+    ) {
+      state.setMessages([
+        {
+          role: "assistant",
+          content: greeting.cachedGreeting,
+          sentAt: state.messages[0].sentAt,
+        },
+      ]);
+    }
+  }, [greeting.cachedGreeting, state.messages, state]);
+
   return {
     refs: { textareaRef: state.textareaRef },
     initials: greeting.initials,
+    greetingMessage: greeting.cachedGreeting,
     showSearch: store.showSearch,
     setShowSearch: store.setShowSearch,
     sessionSearch: store.sessionSearch,

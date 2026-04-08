@@ -12,7 +12,7 @@ export function useSalesAgentChat() {
   const state = useChatState();
   const store = useSessionStore();
   const greeting = useGreeting();
-  const sessions = useSessionActions(state, store, greeting);
+  const sessions = useSessionActions(state, store);
   const chat = useChatActions(state, greeting, sessions);
 
   useEffect(() => {

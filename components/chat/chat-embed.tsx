@@ -35,7 +35,7 @@ export function ChatEmbed() {
     active: isOpen,
   });
 
-  const bubbleText = useEmbedBubble(isOpen, chat.messages, chat.greetingMessage);
+  const bubbleText = useEmbedBubble(isOpen, chat.messages);
 
   const { availHeight, availWidth, isMobile } = useEmbedFrame(
     wrapperRef,

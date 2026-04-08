@@ -13,9 +13,8 @@ import {
 } from "@/lib/api/sales-agent";
 import type { ChatMessage } from "@/lib/chat-types";
 import type { ChatState } from "./use-chat-state";
-import type { GreetingState } from "./use-greeting";
 import type { SessionStore } from "../use-session-store";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback } from "react";
 
 export const FALLBACK_GREETING =
   "Hi! I\u2019m Sky \u{1F44B} \u2014 ask me anything about Innovation City.";
@@ -27,7 +26,6 @@ function makeGreetingMsg(text: string): ChatMessage[] {
 export function useSessionActions(
   state: ChatState,
   store: SessionStore,
-  greeting: GreetingState,
 ) {
   const {
     sessionIdRef,
@@ -44,13 +42,8 @@ export function useSessionActions(
     updateRaw,
   } = state;
 
-  const greetingRef = useRef(greeting.cachedGreeting);
-  useEffect(() => {
-    greetingRef.current = greeting.cachedGreeting;
-  }, [greeting.cachedGreeting]);
-
   const seedGreeting = useCallback(() => {
-    setMessages(makeGreetingMsg(greetingRef.current || FALLBACK_GREETING));
+    setMessages(makeGreetingMsg(FALLBACK_GREETING));
   }, [setMessages]);
 
   const setSessionAndStore = useCallback(

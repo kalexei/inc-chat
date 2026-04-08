@@ -85,22 +85,19 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
     const baseTime =
       firstRealTimestamp ?? now - Math.max(1, messages.length) * 60_000;
 
-    return messages.reduce<ChatMessage[]>(
-      (acc, m, i) => {
-        const hasTimestamp =
-          typeof m.sentAt === "number" && !Number.isNaN(m.sentAt);
-        if (hasTimestamp) return [...acc, m];
+    return messages.reduce<ChatMessage[]>((acc, m, i) => {
+      const hasTimestamp =
+        typeof m.sentAt === "number" && !Number.isNaN(m.sentAt);
+      if (hasTimestamp) return [...acc, m];
 
-        const prev = acc[acc.length - 1];
-        const prevTs =
-          typeof prev?.sentAt === "number" && !Number.isNaN(prev.sentAt)
-            ? prev.sentAt
-            : baseTime;
-        const inferred = Math.max(prevTs + 1000, baseTime + i * 60_000);
-        return [...acc, { ...m, sentAt: inferred }];
-      },
-      [],
-    );
+      const prev = acc[acc.length - 1];
+      const prevTs =
+        typeof prev?.sentAt === "number" && !Number.isNaN(prev.sentAt)
+          ? prev.sentAt
+          : baseTime;
+      const inferred = Math.max(prevTs + 1000, baseTime + i * 60_000);
+      return [...acc, { ...m, sentAt: inferred }];
+    }, []);
   }, [messages, now]);
 
   // Indices whose timestamp is currently visible.
@@ -148,7 +145,7 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
             )}
           >
             {m.role === "assistant" && (
-              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <div className="text-xs font-medium  tracking-wide text-muted-foreground">
                 Sky
               </div>
             )}
@@ -193,7 +190,7 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
       {typing ? (
         <div className="flex">
           <div className="flex min-w-0 flex-col gap-1">
-            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <div className="text-xs font-medium tracking-wide text-muted-foreground">
               Sky
             </div>
             <div className="max-w-[min(100%,42rem)] rounded-2xl rounded-bl-md border border-[#3a3a3a] bg-[#252525] px-3.5 py-2.5 text-[14px] leading-6 text-white/85">

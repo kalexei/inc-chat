@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const SALES_AGENT_ORIGIN =
-  "https://exp-gateway-impl-5eeid8.5i32o8.deu-c1.eu1.cloudhub.io";
-// exp-gateway-impl-5eeid8.5i32o8.deu-c1.eu1.cloudhub.io
+  process.env.SALES_AGENT_API_ORIGIN?.trim() ||
+  "https://sales-sandbox.innovationcity.com";
 const nextConfig: NextConfig = {
   async rewrites() {
     return [

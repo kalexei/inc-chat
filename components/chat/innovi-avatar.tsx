@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Lottie, { type LottieRefCurrentProps } from "lottie-react";
+import { DotLottieReact, type DotLottie } from "@lottiefiles/dotlottie-react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { InnoviState } from "./innovi-fab";
 
@@ -36,71 +36,65 @@ export function InnoviAvatar({
   size = 32,
   className,
 }: InnoviAvatarProps) {
-  const lottieRef = useRef<LottieRefCurrentProps>(null);
-  const [animData, setAnimData] = useState<object | null>(null);
+  const [dotLottie, setDotLottie] = useState<DotLottie | null>(null);
 
   useEffect(() => {
-    fetch("/assets/Innovi/Innovi_Animated.json")
-      .then((r) => r.json())
-      .then(setAnimData)
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const inst = lottieRef.current?.animationItem;
-    if (!inst) return;
+    if (!dotLottie) return;
     const config = STATE_SEGMENTS[state];
     let cancelled = false;
+    let onComplete: (() => void) | null = null;
 
-    inst.loop = false;
-    inst.stop();
-    inst.resetSegments(true);
-
-    if (config.mode === "pause") {
-      inst.goToAndStop(config.pauseFrame, true);
-      return;
-    }
-
-    const [start, end] = config.frames;
-
-    const onComplete = () => {
+    const applySegmentForState = () => {
       if (cancelled) return;
-      if (config.mode === "transition") {
-        inst.resetSegments(true);
-        inst.goToAndStop(config.pauseFrame, true);
-      } else if (config.mode === "play" && config.loop) {
-        inst.playSegments([start, end], true);
+      dotLottie.stop();
+      dotLottie.setLoop(false);
+
+      if (config.mode === "pause") {
+        dotLottie.setFrame(config.pauseFrame);
+        return;
       }
+
+      const [start, end] = config.frames;
+      dotLottie.setSegment(start, end);
+
+      if (config.mode === "transition") {
+        onComplete = () => {
+          if (cancelled) return;
+          dotLottie.removeEventListener("complete", onComplete!);
+          dotLottie.setFrame(config.pauseFrame);
+        };
+        dotLottie.addEventListener("complete", onComplete);
+        dotLottie.play();
+        return;
+      }
+
+      dotLottie.setLoop(config.loop);
+      dotLottie.play();
     };
 
-    inst.addEventListener("complete", onComplete);
-    inst.playSegments([start, end], true);
+    dotLottie.addEventListener("load", applySegmentForState);
+    applySegmentForState();
 
     return () => {
       cancelled = true;
-      inst.removeEventListener("complete", onComplete);
+      dotLottie.removeEventListener("load", applySegmentForState);
+      if (onComplete) {
+        dotLottie.removeEventListener("complete", onComplete);
+      }
     };
-  }, [state, animData]);
-
-  if (!animData) {
-    return (
-      <span
-        className={cn("block shrink-0", className)}
-        style={{ width: size, height: size }}
-      />
-    );
-  }
+  }, [state, dotLottie]);
 
   return (
     <span
       className={cn("block shrink-0", className)}
       style={{ width: size, height: size }}
     >
-      <Lottie
-        lottieRef={lottieRef}
-        animationData={animData}
+      <DotLottieReact
+        src="/assets/Innovi/Innovi_Animated.json"
+        dotLottieRefCallback={setDotLottie}
         loop={false}
         autoplay={false}
+        useFrameInterpolation
         style={{ width: size, height: size }}
       />
     </span>

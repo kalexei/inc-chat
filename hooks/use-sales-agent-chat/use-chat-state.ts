@@ -56,6 +56,7 @@ export function useChatState() {
     setMessages([]);
     updateSlots({}, false);
     updateRaw({}, {}, {});
+    didAutoCreateRef.current = false;
   }, [updateSlots, updateRaw]);
 
   const markAutoCreated = useCallback(() => {

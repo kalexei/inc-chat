@@ -1,11 +1,18 @@
-import { STORAGE_KEY } from "@/lib/chat-constants";
+import { STORAGE_KEY, SESSION_TTL_MS } from "@/lib/chat-constants";
 import type { StoredSession } from "@/lib/chat-types";
 
 export function loadStoredSessions(): StoredSession[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as StoredSession[]) : [];
+    if (!raw) return [];
+    const all = JSON.parse(raw) as StoredSession[];
+    const cutoff = Date.now() - SESSION_TTL_MS;
+    const valid = all.filter((s) => s.createdAt >= cutoff);
+    if (valid.length < all.length) {
+      persistSessions(valid);
+    }
+    return valid;
   } catch {
     return [];
   }

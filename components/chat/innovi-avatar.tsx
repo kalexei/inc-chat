@@ -20,7 +20,7 @@ type SegmentConfig =
 const STATE_SEGMENTS: Record<InnoviState, SegmentConfig> = {
   neutral: { mode: "transition", frames: [511, 600], pauseFrame: 1 },
   happy: { mode: "transition", frames: [0, 135], pauseFrame: 135 },
-  thinking: { mode: "play", frames: [135, 300], loop: true },
+  thinking: { mode: "play", frames: [135, 297], loop: true },
   speaking: { mode: "play", frames: [295, 481], loop: true },
   error: { mode: "play", frames: [0, 135], loop: false },
 };

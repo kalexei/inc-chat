@@ -6,9 +6,15 @@ import { useEmbedBubble } from "@/hooks/use-embed-bubble";
 import { useEmbedFrame } from "@/hooks/use-embed-frame";
 import { useEmbedScroll } from "@/hooks/use-embed-scroll";
 import { useTransparentBg } from "@/hooks/use-transparent-bg";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, Ellipsis, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ChatComposer } from "./chat-composer";
 import { ChatMessageList } from "./chat-message-list";
@@ -61,6 +67,15 @@ export function ChatEmbed() {
     return () => window.clearTimeout(t);
   }, [isOpen]);
 
+  const endSessionAndClose = () => {
+    if (chat.sessionId) {
+      void chat.deleteSession(chat.sessionId, {
+        stopPropagation: () => {},
+      } as React.MouseEvent);
+    }
+    setIsOpen(false);
+  };
+
   // ── UI ──────────────────────────────────────────────────────────────
 
   return (
@@ -89,17 +104,6 @@ export function ChatEmbed() {
                 : "pointer-events-none translate-y-6 scale-[0.94] opacity-0 blur-[2px]",
             )}
           >
-            {!isMobile && (
-              <button
-                type="button"
-                aria-label="Close chat"
-                onClick={() => setIsOpen(false)}
-                className="absolute -top-2.5 -right-2.5 z-10 grid size-6 place-items-center rounded-full bg-card ring-1 ring-border/70 text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <X className="size-3.5" />
-              </button>
-            )}
-
             <section
               className={cn(
                 "flex min-w-0 flex-col overflow-hidden border border-border/70 bg-card",
@@ -125,16 +129,36 @@ export function ChatEmbed() {
                     Your Innovation City assistant.
                   </p>
                 </div>
-                {isMobile && (
+                <div className="flex items-center gap-1">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="More options"
+                        className="grid size-8 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95"
+                      >
+                        <Ellipsis className="size-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onSelect={endSessionAndClose}
+                        disabled={!chat.sessionId}
+                      >
+                        End chat session
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <button
                     type="button"
                     aria-label="Close chat"
                     onClick={() => setIsOpen(false)}
-                    className="grid size-9 shrink-0 place-items-center rounded-full bg-muted/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95"
+                    className="grid size-8 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95"
                   >
                     <X className="size-5" />
                   </button>
-                )}
+                </div>
               </header>
 
               <ScrollArea

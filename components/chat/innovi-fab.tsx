@@ -8,7 +8,6 @@ export type InnoviState =
   | "happy"
   | "thinking"
   | "speaking"
-  | "surprised"
   | "error";
 
 type InnoviFabProps = {

@@ -25,6 +25,16 @@ export function useInnoviState({
   }, [active]);
 
   useEffect(() => {
+    if (!active) {
+      if (speakingTimerRef.current) {
+        clearTimeout(speakingTimerRef.current);
+        speakingTimerRef.current = null;
+      }
+      prevTypingRef.current = false;
+      setState("neutral");
+      return;
+    }
+
     const isError = sessionLabel.toLowerCase().includes("error");
     if (isError) {
       if (speakingTimerRef.current) {
@@ -58,7 +68,7 @@ export function useInnoviState({
     }
 
     if (!speakingTimerRef.current) {
-      setState(active ? "happy" : "neutral");
+      setState("happy");
     }
   }, [typing, isSending, sessionLabel, active]);
 

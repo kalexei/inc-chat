@@ -27,8 +27,10 @@ export function ChatEmbed() {
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [shouldRenderPanel, setShouldRenderPanel] = useState(false);
+  const [composerHeight, setComposerHeight] = useState(96);
 
   // ── Composed hooks ──────────────────────────────────────────────────
 
@@ -67,6 +69,27 @@ export function ChatEmbed() {
     return () => window.clearTimeout(t);
   }, [isOpen]);
 
+  // Autofocus textarea when panel opens
+  useEffect(() => {
+    if (isOpen) {
+      const t = window.setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 260); // wait for open animation to complete
+      return () => window.clearTimeout(t);
+    }
+  }, [isOpen, textareaRef]);
+
+  // Track composer height for jump-to-latest positioning
+  useEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setComposerHeight(entry.contentRect.height);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [shouldRenderPanel]);
+
   const endSessionAndClose = () => {
     if (chat.sessionId) {
       void chat.deleteSession(chat.sessionId, {
@@ -94,6 +117,7 @@ export function ChatEmbed() {
       >
         {shouldRenderPanel ? (
           <div
+            aria-hidden={!isOpen}
             className={cn(
               "relative overflow-visible",
               isMobile
@@ -123,10 +147,10 @@ export function ChatEmbed() {
                 {isMobile && <InnoviAvatar state={innoviState} size={32} />}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-foreground">
-                    Innovation City Help (Sky)
+                    {"Assistant"}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Your Innovation City assistant.
+                    {"Your assistant"}
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
@@ -179,16 +203,16 @@ export function ChatEmbed() {
                   "absolute left-1/2 z-20 -translate-x-1/2 rounded-full border border-border/70",
                   "bg-background p-2 text-muted-foreground shadow-lg shadow-black/35",
                   "transition-all duration-250 ease-out",
-                  "bottom-24",
                   showJumpToLatest
                     ? "pointer-events-auto translate-y-0 opacity-100"
                     : "pointer-events-none translate-y-2 opacity-0",
                 )}
+                style={{ bottom: composerHeight + 16 }}
               >
                 <ChevronDown className="size-4" />
               </button>
 
-              <div className="shrink-0 space-y-3 border-t border-border/70 bg-background p-3">
+              <div ref={composerRef} className="shrink-0 space-y-3 border-t border-border/70 bg-background p-3">
                 <ChatComposer
                   textareaRef={textareaRef}
                   inputEnabled={chat.inputEnabled}

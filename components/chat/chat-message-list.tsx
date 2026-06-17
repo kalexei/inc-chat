@@ -1,6 +1,7 @@
 "use client";
 
 import type { ChatMessage } from "@/lib/chat-types";
+import { TtsButton } from "@/components/chat/tts-button";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -75,7 +76,6 @@ function timeAgo(ts: number, now: number): string {
 }
 
 export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
-  // Clock state used for relative timestamps; initialized once.
   const [now, setNow] = useState(() => Date.now());
 
   const normalizedMessages = useMemo(() => {
@@ -100,19 +100,15 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
     }, []);
   }, [messages, now]);
 
-  // Indices whose timestamp is currently visible.
-  // Initialise with the last message so it shows by default.
   const [shown, setShown] = useState<Set<number>>(
     () => new Set(messages.length > 0 ? [messages.length - 1] : []),
   );
 
-  // Tick every 30 s so "just now" → "1 min ago" stays accurate.
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(id);
   }, []);
 
-  // Always show the timestamp for the newest message automatically.
   useEffect(() => {
     if (messages.length === 0) return;
     const t = window.setTimeout(() => {
@@ -132,60 +128,76 @@ export function ChatMessageList({ messages, typing }: ChatMessageListProps) {
 
   return (
     <div className="space-y-4 pb-2">
-      {normalizedMessages.map((m, i) => (
-        <div
-          key={`${i}-${m.role}-${m.content.slice(0, 24)}`}
-          data-chat-role={m.role}
-          className={cn("flex flex-col", m.role === "user" && "items-end")}
-        >
+      {normalizedMessages.map((m, i) => {
+        // Stable ID for TTS — role + index + first 24 chars of content
+        const messageId = `${m.role}-${i}-${m.content.slice(0, 24)}`;
+
+        return (
           <div
-            className={cn(
-              "flex min-w-0 max-w-[min(100%,42rem)] flex-col gap-1.5",
-              m.role === "user" && "items-end",
-            )}
+            key={messageId}
+            data-chat-role={m.role}
+            className={cn("flex flex-col", m.role === "user" && "items-end")}
           >
-            {m.role === "assistant" && (
-              <div className="text-xs font-medium  tracking-wide text-muted-foreground">
-                Sky
-              </div>
-            )}
-
-            {/* Message bubble — click to toggle timestamp */}
-            <button
-              type="button"
-              onClick={() => toggle(i)}
-              className={cn(
-                "rounded-2xl border px-3.5 py-2.5 text-[14px] leading-6 text-left",
-                m.role === "user"
-                  ? "rounded-br-md border-white bg-white text-black"
-                  : "rounded-bl-md border-[#3a3a3a] bg-[#252525] text-white",
-                "cursor-pointer",
-              )}
-            >
-              {m.role === "assistant" ? (
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={assistantComponents}
-                >
-                  {m.content}
-                </ReactMarkdown>
-              ) : (
-                m.content
-              )}
-            </button>
-
-            {/* Timestamp — slides in/out */}
             <div
               className={cn(
-                "overflow-hidden text-[11px] leading-4 text-muted-foreground transition-[max-height,opacity] duration-200 ease-in-out",
-                shown.has(i) ? "max-h-8 opacity-100" : "max-h-0 opacity-0",
+                "flex min-w-0 max-w-[min(100%,42rem)] flex-col gap-1.5",
+                m.role === "user" && "items-end",
               )}
             >
-              {timeAgo(m.sentAt!, now)}
+              {m.role === "assistant" && (
+                <div className="text-xs font-medium tracking-wide text-muted-foreground">
+                  Sky
+                </div>
+              )}
+
+              {/* Message bubble — click to toggle timestamp */}
+              <button
+                type="button"
+                onClick={() => toggle(i)}
+                className={cn(
+                  "rounded-2xl border px-3.5 py-2.5 text-[14px] leading-6 text-left",
+                  m.role === "user"
+                    ? "rounded-br-md border-white bg-white text-black"
+                    : "rounded-bl-md border-[#3a3a3a] bg-[#252525] text-white",
+                  "cursor-pointer",
+                )}
+              >
+                {m.role === "assistant" ? (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={assistantComponents}
+                  >
+                    {m.content}
+                  </ReactMarkdown>
+                ) : (
+                  m.content
+                )}
+              </button>
+
+              {/* Bottom row: timestamp + TTS button */}
+              <div
+                className={cn(
+                  "flex items-center gap-1.5",
+                  m.role === "user" ? "flex-row-reverse" : "flex-row",
+                )}
+              >
+                {/* Timestamp — slides in/out */}
+                <div
+                  className={cn(
+                    "overflow-hidden text-[11px] leading-4 text-muted-foreground transition-[max-height,opacity] duration-200 ease-in-out",
+                    shown.has(i) ? "max-h-8 opacity-100" : "max-h-0 opacity-0",
+                  )}
+                >
+                  {timeAgo(m.sentAt!, now)}
+                </div>
+
+                {/* TTS button — always visible */}
+                <TtsButton messageId={messageId} text={m.content} />
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {typing ? (
         <div className="flex">

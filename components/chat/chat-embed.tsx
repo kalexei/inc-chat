@@ -6,6 +6,7 @@ import { useEmbedBubble } from "@/hooks/use-embed-bubble";
 import { useEmbedFrame } from "@/hooks/use-embed-frame";
 import { useEmbedScroll } from "@/hooks/use-embed-scroll";
 import { useTransparentBg } from "@/hooks/use-transparent-bg";
+import { TtsProvider } from "@/components/chat/tts-provider";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,7 +75,7 @@ export function ChatEmbed() {
     if (isOpen) {
       const t = window.setTimeout(() => {
         textareaRef.current?.focus();
-      }, 260); // wait for open animation to complete
+      }, 260);
       return () => window.clearTimeout(t);
     }
   }, [isOpen, textareaRef]);
@@ -84,7 +85,7 @@ export function ChatEmbed() {
     const el = composerRef.current;
     if (!el) return;
     const observer = new ResizeObserver(([entry]) => {
-      setComposerHeight(entry.contentRect.height);
+      setComposerHeight(entry!.contentRect.height);
     });
     observer.observe(el);
     return () => observer.disconnect();
@@ -99,10 +100,16 @@ export function ChatEmbed() {
     setIsOpen(false);
   };
 
+  // TODO: implement once backend voice endpoint is ready
+  const handleSendVoice = (blob: Blob) => {
+    void blob;
+    console.warn("[VoiceMessage] onSendVoice not yet wired to backend");
+  };
+
   // ── UI ──────────────────────────────────────────────────────────────
 
   return (
-    <>
+    <TtsProvider>
       <style>{`html, body { background: transparent !important; }`}</style>
 
       <div
@@ -220,6 +227,7 @@ export function ChatEmbed() {
                   onSend={() => void chat.sendMessage()}
                   onNewSession={() => void chat.newSession()}
                   onAutoResize={chat.autoResize}
+                  onSendVoice={handleSendVoice}
                 />
               </div>
             </section>
@@ -237,6 +245,6 @@ export function ChatEmbed() {
           </div>
         )}
       </div>
-    </>
+    </TtsProvider>
   );
 }

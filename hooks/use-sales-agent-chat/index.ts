@@ -29,7 +29,7 @@ export function useSalesAgentChat() {
         void sessions.newSession();
       }
     })();
-  }, [state.inputEnabled, sessions.loadSession, sessions.newSession, state]);
+  }, [sessions, state.inputEnabled, sessions.loadSession, sessions.newSession, state]);
 
   useEffect(() => {
     if (
